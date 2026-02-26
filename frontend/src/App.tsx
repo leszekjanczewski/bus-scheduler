@@ -9,8 +9,7 @@ import type { ConnectionDTO, BusStopDTO, StopDepartureDTO } from './types';
 import { useDarkMode } from './hooks/useDarkMode';
 import ThemeToggle from './components/ThemeToggle';
 import { AlertCircle, MapPin, WifiOff, Github, Settings } from 'lucide-react';
-
-const API_BASE_URL = 'http://192.168.68.114:8080/api/v1';
+import { API_BASE_URL } from './config';
 
 function App() {
   const { theme, toggleTheme } = useDarkMode();

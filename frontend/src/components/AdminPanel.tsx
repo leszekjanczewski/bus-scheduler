@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Trash2, RefreshCw, ChevronLeft, LogIn, Database, Edit3, Plus, Save, X, Clock, MapPin, List, Settings, LogOut, Building2, Map as MapIcon } from 'lucide-react';
 import StopManager from './StopManager';
 import StopMap from './StopMap';
+import { API_BASE_URL } from '../config';
 
 interface BusStop { id: number; name: string; city: string; direction?: string; }
 interface RouteStop { id: number; busStop: BusStop; sequenceNumber: number; timeOffsetMinutes: number; }
@@ -12,7 +13,8 @@ interface Trip { id: number; calendarType: string; departures: Departure[]; }
 interface Route { id: number; variantName: string; direction: string; trips: Trip[]; routeStops: RouteStop[]; }
 interface BusLine { id: number; lineNumber: string; operator: string; routes: Route[]; }
 
-const API_BASE_URL = 'http://192.168.68.114:8080/api/admin';
+
+const API_BASE_URL_ADMIN = `${API_BASE_URL}/api/admin`;
 
 const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [lines, setLines] = useState<BusLine[]>([]);
@@ -34,8 +36,8 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
     try {
       const [linesRes, stopsRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/lines`, { headers: { Authorization: `Bearer ${authToken}` } }),
-        axios.get(`http://192.168.68.114:8080/api/v1/busstops`, { headers: { Authorization: `Bearer ${authToken}` } })
+        axios.get(`${API_BASE_URL_ADMIN}/lines`, { headers: { Authorization: `Bearer ${authToken}` } }),
+        axios.get(`${API_BASE_URL}/busstops`, { headers: { Authorization: `Bearer ${authToken}` } })
       ]);
       setLines(linesRes.data);
       setAllStops(stopsRes.data);
@@ -55,7 +57,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://192.168.68.114:8080/api/auth/login', {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         username: 'admin', password: password
       });
       const newToken = response.data.token;

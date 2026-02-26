@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Save, MapPin, Trash2, X, Plus, AlertCircle, Loader2, Filter, ExternalLink, ClipboardPaste, Edit3 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface BusStop {
   id: number;
@@ -22,12 +23,11 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
   const [coordsInput, setCoordsInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = 'http://192.168.68.114:8080/api/v1/busstops';
 
   const fetchStops = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(API_URL, {
+      const response = await axios.get(`${API_BASE_URL}/busstops`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStops(response.data);

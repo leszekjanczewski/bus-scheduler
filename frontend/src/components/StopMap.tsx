@@ -9,7 +9,7 @@ import { Map as MapIcon, Loader2, AlertCircle } from 'lucide-react';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-import { API_BASE_URL } from './config';
+import { API_BASE_URL } from '../config';
 
 let DefaultIcon = L.icon({
   iconUrl: markerIcon,
