@@ -9,6 +9,8 @@ import { Map as MapIcon, Loader2, AlertCircle } from 'lucide-react';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
+import { API_BASE_URL } from './config';
+
 let DefaultIcon = L.icon({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
@@ -25,7 +27,7 @@ interface BusStop {
   longitude: number | null;
 }
 
-const API_URL = 'http://192.168.68.114:8080/api/v1/busstops';
+const API_URL = `${API_BASE_URL}/busstops`;
 
 const StopMap: React.FC<{ token: string }> = ({ token }) => {
   const [stops, setStops] = useState<BusStop[]>([]);
