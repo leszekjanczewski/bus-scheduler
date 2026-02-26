@@ -1,0 +1,47 @@
+﻿@import "tailwindcss";
+
+@theme {
+  --font-inter: "Inter", sans-serif;
+}
+
+/* 
+  Enable class-based dark mode in Tailwind CSS v4.
+  This allows 'dark:' variants to trigger when the 'dark' class is present on a parent (html).
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    font-family: var(--font-inter);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    margin: 0;
+  }
+
+  /* Basic fallback if tailwind fails to load */
+  html.dark body {
+    background-color: #020617;
+    color: #f8fafc;
+  }
+
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+  }
+}
+
+/* Custom Utilities */
+@utility glass {
+  @apply bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl shadow-blue-900/5;
+}
