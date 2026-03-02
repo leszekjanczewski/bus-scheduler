@@ -10,6 +10,10 @@ import java.util.List;
 public interface BusLineRepository extends JpaRepository<BusLine, Long> {
     BusLine findByLineNumber(String lineNumber);
 
-    @Query("SELECT DISTINCT b FROM BusLine b LEFT JOIN FETCH b.routes")
+    @Query("SELECT DISTINCT b FROM BusLine b " +
+           "LEFT JOIN FETCH b.routes r " +
+           "LEFT JOIN FETCH r.routeStops rs " +
+           "LEFT JOIN FETCH r.trips t " +
+           "LEFT JOIN FETCH t.departures d")
     List<BusLine> findAllWithRoutes();
 }

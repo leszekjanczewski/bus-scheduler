@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "trips")
@@ -24,12 +24,9 @@ public class Trip {
     @JoinColumn(name = "route_id", nullable = false)
     private Route route;
 
-    // Można tu dodać powiązanie z kalendarzem (Dni robocze/Soboty)
-    // Na razie uproszczenie: string
-    private String calendarType; // np. "WORKDAYS", "WEEKENDS", "HOLIDAYS"
+    private String calendarType;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL)
-    private List<Departure> departures;
+    private Set<Departure> departures;
 }
-

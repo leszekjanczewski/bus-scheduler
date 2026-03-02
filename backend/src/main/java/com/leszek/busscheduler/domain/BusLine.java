@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "bus_lines")
@@ -20,13 +20,12 @@ public class BusLine {
     private Long id;
 
     @Column(nullable = false)
-    private String lineNumber; // np. "241"
+    private String lineNumber;
 
-    private String operator;   // np. "Gmina Kłodawa"
+    private String operator;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "busLine", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 10)
-    private List<Route> routes;
+    private Set<Route> routes;
 }
-
