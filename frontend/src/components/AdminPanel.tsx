@@ -14,11 +14,9 @@ interface Route { id: number; variantName: string; direction: string; trips: Tri
 interface BusLine { id: number; lineNumber: string; operator: string; routes: Route[]; }
 interface User { id: string; username: string; email: string; roles: string[]; }
 
-// Note: Backend has /api/admin and /api/auth. Frontend API_BASE_URL usually has /api/v1.
-// We clean the URL to match the current backend paths.
-const BASE_URL = API_BASE_URL.replace('/api/v1', '/api');
-const ADMIN_API = `${BASE_URL}/admin`;
-const AUTH_API = `${BASE_URL}/auth`;
+// Ujednolicenie ścieżek do /api/v1
+const ADMIN_API = `${API_BASE_URL}/admin`;
+const AUTH_API = `${API_BASE_URL}/auth`;
 
 const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [lines, setLines] = useState<BusLine[]>([]);
@@ -54,7 +52,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     try {
       const [linesRes, stopsRes] = await Promise.all([
         axios.get(`${ADMIN_API}/lines`, { headers: { Authorization: `Bearer ${authToken}` } }),
-        axios.get(`${BASE_URL}/busstops`, { headers: { Authorization: `Bearer ${authToken}` } })
+        axios.get(`${API_BASE_URL}/busstops`, { headers: { Authorization: `Bearer ${authToken}` } })
       ]);
       setLines(linesRes.data);
       setAllStops(stopsRes.data);
