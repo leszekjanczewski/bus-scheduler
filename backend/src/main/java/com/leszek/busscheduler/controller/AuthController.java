@@ -1,6 +1,5 @@
-﻿package com.leszek.busscheduler.controller;
+package com.leszek.busscheduler.controller;
 
-import com.leszek.busscheduler.domain.User;
 import com.leszek.busscheduler.dto.AuthResponse;
 import com.leszek.busscheduler.dto.LoginRequest;
 import com.leszek.busscheduler.repository.UserRepository;
@@ -19,7 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
