@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Save, MapPin, Trash2, X, Plus, AlertCircle, Loader2, Filter, ExternalLink, ClipboardPaste, Edit3 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
@@ -13,7 +13,9 @@ interface BusStop {
   direction?: string;
 }
 
-const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ token, onUnauthorized }) => {
+const API_URL = \/busstops;
+
+const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin: boolean }> = ({ token, onUnauthorized, isAdmin }) => {
   const [stops, setStops] = useState<BusStop[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
@@ -27,13 +29,13 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
   const fetchStops = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/busstops`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(API_URL, {
+        headers: { Authorization: Bearer \ }
       });
       setStops(response.data);
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();      
-      else setError('Błąd podczas pobierania przystanków.');
+      else setError('BÅ‚Ä…d podczas pobierania przystankÃ³w.');
     } finally {
       setLoading(false);
     }
@@ -46,10 +48,11 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
   const openEdit = (stop: BusStop) => {
     setEditingStop(stop);
     setIsAdding(false);
-    setCoordsInput(stop.latitude && stop.longitude ? `${stop.latitude}, ${stop.longitude}` : '');
+    setCoordsInput(stop.latitude && stop.longitude ? \, \ : '');
   };
 
   const openAdd = () => {
+    if (!isAdmin) return;
     setEditingStop({ id: 0, name: '', city: '', latitude: null, longitude: null });
     setIsAdding(true);
     setCoordsInput('');
@@ -76,32 +79,33 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
     try {
       if (isAdding) {
         await axios.post(API_URL, editingStop, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: Bearer \ }
         });
       } else {
-        await axios.put(`${API_URL}/${editingStop.id}`, editingStop, {
-          headers: { Authorization: `Bearer ${token}` }
+        await axios.put(\/\, editingStop, {
+          headers: { Authorization: Bearer \ }
         });
       }
       await fetchStops();
       setEditingStop(null);
       setError(null);
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();      
-      else setError('Błąd podczas zapisu danych.');
+      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();
+      else setError('BÅ‚Ä…d podczas zapisu danych.');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Czy na pewno chcesz usunąć ten przystanek?')) return;
+    if (!isAdmin) return;
+    if (!window.confirm('Czy na pewno chcesz usunÄ…Ä‡ ten przystanek?')) return;
     try {
-      await axios.delete(`${API_URL}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      await axios.delete(\/\, {
+        headers: { Authorization: Bearer \ }
       });
       setStops(stops.filter(s => s.id !== id));
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();      
-      else setError('Błąd podczas usuwania. Przystanek może być częścią trasy.');
+      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();
+      else setError('BÅ‚Ä…d podczas usuwania. Przystanek moÅ¼e byÄ‡ czÄ™Å›ciÄ… trasy.');
     }
   };
 
@@ -115,7 +119,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
 
   return (
     <div className="space-y-8 pb-20 text-left">
-      <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">  
+      <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="relative flex-1 w-full text-left">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
@@ -127,7 +131,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
           />
         </div>
 
-        <div className="flex items-center gap-4 w-full lg:w-auto">
+        <div className="flex items-center gap-4 w-full lg:w-auto text-left">
           <div className="relative w-full lg:w-64 text-left">
             <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <select
@@ -135,18 +139,20 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
               onChange={(e) => setSelectedCity(e.target.value)}
               className="w-full pl-12 pr-10 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-transparent focus:border-blue-500 outline-none font-bold appearance-none cursor-pointer text-sm"
             >
-              <option value="ALL">Wszystkie miejscowości</option>
+              <option value="ALL">Wszystkie miejscowoÅ›ci</option>
               {cities.map(city => (
                 <option key={city} value={city}>{city}</option>
               ))}
             </select>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 whitespace-nowrap"
-          >
-            <Plus size={18} /> Dodaj
-          </button>
+          {isAdmin && (
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 whitespace-nowrap"
+            >
+              <Plus size={18} /> Dodaj
+            </button>
+          )}
         </div>
       </div>
 
@@ -156,29 +162,29 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
         {loading ? (
           <div className="col-span-full py-20 flex justify-center"><Loader2 className="animate-spin text-blue-600" size={40} /></div>
         ) : filteredStops.length > 0 ? (
           filteredStops.map(stop => {
             const hasCoords = stop.latitude && stop.longitude;
             const googleMapsUrl = hasCoords
-              ? `https://www.google.com/maps/search/?api=1&query=${stop.latitude},${stop.longitude}`
-              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + stop.city)}`;
+              ? https://www.google.com/maps/search/?api=1&query=\,\
+              : https://www.google.com/maps/search/?api=1&query=\; 
 
             return (
-              <div key={stop.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500 transition-all group relative">
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`p-3 rounded-xl ${hasCoords ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600' }`}>
+              <div key={stop.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500 transition-all group relative text-left">
+                <div className="flex justify-between items-start mb-4 text-left">
+                  <div className={p-3 rounded-xl \}>
                     <MapPin size={20} />
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-left">
                     <a
                       href={googleMapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
-                      title={hasCoords ? "Pokaż dokładną lokalizację" : "Szukaj w Google Maps"}
+                      title={hasCoords ? "PokaÅ¼ dokÅ‚adnÄ… lokalizacjÄ™" : "Szukaj w Google Maps"}
                     >
                       <ExternalLink size={18} />
                     </a>
@@ -189,34 +195,36 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
                     >
                       <Edit3 size={18} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(stop.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Usuń"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDelete(stop.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="UsuÅ„"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
                 <h3 className="text-lg font-black dark:text-white mb-1 truncate pr-10">{stop.name}</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{stop.city}</p>
-                
-                <div className="flex flex-wrap gap-1 mb-6">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{stop.city}</p>        
+
+                <div className="flex flex-wrap gap-1 mb-6 text-left">
                   {stop.directions && stop.directions.map(dir => (
                     <span key={dir} className="text-[8px] font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/50 uppercase flex items-center gap-1">
-                      → {dir}
+                      â†’ {dir}
                     </span>
                   ))}
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-4 text-left">
                   <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
-                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">LAT</p> 
-                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.latitude || '---'}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">LAT</p>
+                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.latitude || '---'}</p>       
                   </div>
                   <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
-                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">LNG</p> 
-                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.longitude || '---'}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">LNG</p>
+                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.longitude || '---'}</p>      
                   </div>
                 </div>
               </div>
@@ -224,31 +232,31 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
           })
         ) : (
           <div className="col-span-full py-20 text-center bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] border border-dashed border-slate-200 dark:border-slate-800">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Nie znaleziono przystanków spełniających kryteria</p>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Nie znaleziono przystankÃ³w speÅ‚niajÄ…cych kryteria</p>
           </div>
         )}
       </div>
 
       {editingStop && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 text-left">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 text-left">
+            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20 text-left">
               <h3 className="text-xl font-black dark:text-white uppercase tracking-tight">{isAdding ? 'Nowy Przystanek' : 'Edycja Przystanku'}</h3>
               <button onClick={() => setEditingStop(null)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 text-left">
+              <div className="space-y-2 text-left">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 block">Nazwa Przystanku (np. Owocowa 01)</label>
                 <input
                   value={editingStop.name}
-                  onChange={e => setEditingStop({ ...editingStop, name: e.target.value })}     
+                  onChange={e => setEditingStop({ ...editingStop, name: e.target.value })}
                   className="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-blue-500 tracking-widest ml-1 block">Kierunek Jazdy (np. Gorzów, Santocko)</label>
+
+              <div className="space-y-2 text-left">
+                <label className="text-[10px] font-black uppercase text-blue-500 tracking-widest ml-1 block">Kierunek Jazdy (np. GorzÃ³w, Santocko)</label>
                 <input
                   value={editingStop.direction || ''}
                   onChange={e => setEditingStop({ ...editingStop, direction: e.target.value })}
@@ -257,33 +265,33 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 text-left">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 block">Miasto / Gmina</label>
                 <input
                   value={editingStop.city}
-                  onChange={e => setEditingStop({ ...editingStop, city: e.target.value })}     
+                  onChange={e => setEditingStop({ ...editingStop, city: e.target.value })}
                   className="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
               {editingStop.directions && editingStop.directions.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 text-left">
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 block">Aktywne Kierunki (tylko odczyt)</label>
-                  <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-left">
                     {editingStop.directions.map(dir => (
                       <span key={dir} className="text-[9px] font-black bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full uppercase">
-                        → {dir}
+                        â†’ {dir}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-2 text-left">
                 <label className="text-[10px] font-black uppercase text-blue-600 tracking-widest ml-1 block">Szybkie Wklejanie (Lat, Lng)</label>
-                <div className="relative">
-                  <ClipboardPaste className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={18} />
+                <div className="relative text-left">
+                  <ClipboardPaste className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={18} />     
                   <input
                     placeholder="Wklej: 52.79, 15.32"
                     value={coordsInput}
@@ -293,9 +301,9 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 opacity-60">
+              <div className="grid grid-cols-2 gap-4 opacity-60 text-left">
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Szerokość (Lat)</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">SzerokoÅ›Ä‡ (Lat)</label>
                   <input
                     type="number" step="0.000001"
                     value={editingStop.latitude || ''}
@@ -304,7 +312,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
                   />
                 </div>
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Długość (Lng)</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">DÅ‚ugoÅ›Ä‡ (Lng)</label>
                   <input
                     type="number" step="0.000001"
                     value={editingStop.longitude || ''}
@@ -314,7 +322,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void }> = ({ 
                 </div>
               </div>
               <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 mt-4">
-                <Save size={18} /> {isAdding ? 'Stwórz Przystanek' : 'Zapisz Przystanek'}      
+                <Save size={18} /> {isAdding ? 'StwÃ³rz Przystanek' : 'Zapisz Przystanek'}
               </button>
             </form>
           </div>

@@ -1,4 +1,4 @@
-package com.leszek.busscheduler.config;
+﻿package com.leszek.busscheduler.config;
 
 import com.leszek.busscheduler.security.CustomUserDetailsService;
 import com.leszek.busscheduler.security.JwtAuthenticationFilter;
@@ -38,6 +38,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         final String ADMIN = "ADMIN";
+        final String USER = "USER";
         final String API_AUTH_PATTERN = "/api/auth/**";
         final String API_ADMIN_PATTERN = "/api/admin/**";
         final String V1_PATTERNS = "/api/v1/**";
@@ -51,18 +52,20 @@ public class SecurityConfig {
                         .requestMatchers(API_AUTH_PATTERN).permitAll()
                         .requestMatchers(ERROR_PATTERN).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, V1_PATTERNS).permitAll()
-                        .requestMatchers(API_ADMIN_PATTERN).hasRole(ADMIN)
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, V1_PATTERNS).hasRole(ADMIN)
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, V1_PATTERNS).hasRole(ADMIN)
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, V1_PATTERNS).hasRole(ADMIN)
+                        
+                        // Konfiguracja dla rÃ³l
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, API_ADMIN_PATTERN).hasAnyRole(ADMIN, USER)
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, API_ADMIN_PATTERN).hasAnyRole(ADMIN, USER)
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, API_ADMIN_PATTERN).hasRole(ADMIN)
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, API_ADMIN_PATTERN).hasRole(ADMIN)
+                        
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-                )
-                .httpBasic(Customizer.withDefaults());
+                );
 
         return http.build();
     }
