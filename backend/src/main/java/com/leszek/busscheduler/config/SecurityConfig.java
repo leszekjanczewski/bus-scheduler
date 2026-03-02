@@ -40,7 +40,6 @@ public class SecurityConfig {
         final String USER = "USER";
         final String API_AUTH_PATTERN = "/api/v1/auth/**";
         final String API_ADMIN_PATTERN = "/api/v1/admin/**";
-        final String V1_PUBLIC_PATTERNS = "/api/v1/**";
         final String ERROR_PATTERN = "/error";
 
         http
@@ -56,7 +55,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, API_ADMIN_PATTERN).hasRole(ADMIN)
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, API_ADMIN_PATTERN).hasRole(ADMIN)
                         
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, V1_PUBLIC_PATTERNS).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/busstops/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
