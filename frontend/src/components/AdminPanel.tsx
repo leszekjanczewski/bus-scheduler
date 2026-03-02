@@ -14,7 +14,7 @@ interface Route { id: number; variantName: string; direction: string; trips: Tri
 interface BusLine { id: number; lineNumber: string; operator: string; routes: Route[]; }
 
 
-const API_BASE_URL_ADMIN = ${API_BASE_URL}/api/admin;
+const API_BASE_URL_ADMIN = `${API_BASE_URL}/api/admin`;
 
 const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [lines, setLines] = useState<BusLine[]>([]);
@@ -42,15 +42,15 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
     try {
       const [linesRes, stopsRes] = await Promise.all([
-        axios.get(${API_BASE_URL_ADMIN}/lines, { headers: { Authorization: Bearer  } }),
-        axios.get(${API_BASE_URL}/busstops, { headers: { Authorization: Bearer  } })
+        axios.get(`${API_BASE_URL_ADMIN}/lines`, { headers: { Authorization: `Bearer ${authToken}` } }),
+        axios.get(`${API_BASE_URL}/busstops`, { headers: { Authorization: `Bearer ${authToken}` } })
       ]);
       setLines(linesRes.data);
       setAllStops(stopsRes.data);
       setError(null);
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
-      else setError('BÅ‚Ä…d pobierania danych.');
+      else setError('Błąd pobierania danych.');
     } finally {
       setLoading(false);
     }
@@ -63,9 +63,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Logowanie uÅ¼ywa /api/auth/login (bez v1 w ścieżce, bo tak jest w backendzie)
-      // Ale config.ts dodaje /api/v1 do API_BASE_URL. 
-      // Musimy uÅ¼yÄ‡ czystego URL dla Auth.
+      // UsuniÄ™cie /api/v1 z koÅ„ca, aby trafiÄ‡ w /api/auth/login
       const authUrl = API_BASE_URL.replace('/api/v1', '/api/auth/login');
       
       const response = await axios.post(authUrl, {
@@ -83,7 +81,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       fetchInitialData(newToken);
       setError(null);
     } catch (err) {
-      setError('BÅ‚Ä™dne dane logowania.');
+      setError('Błędne dane logowania.');
     }
   };
 
@@ -91,16 +89,16 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!editingLine) return;
     setLoading(true);
     try {
-      await axios.put(${API_BASE_URL_ADMIN}/lines/, editingLine, {
-        headers: { Authorization: Bearer  }
+      await axios.put(`${API_BASE_URL_ADMIN}/lines/${editingLine.id}`, editingLine, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setLines(lines.map(l => l.id === editingLine.id ? editingLine : l));
       setEditingLine(null);
       setError(null);
-      alert('Zmiany zapisane pomyÅ›lnie!');
+      alert('Zmiany zapisane pomyślnie!');
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
-      else setError('BÅ‚Ä…d zapisu danych.');
+      else setError('Błąd zapisu danych.');
     } finally {
       setLoading(false);
     }
@@ -108,15 +106,15 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleDeleteLine = async (id: number) => {
     if (!isAdmin) return;
-    if (!window.confirm('Czy na pewno chcesz usunÄ…Ä‡ tÄ™ liniÄ™?')) return;
+    if (!window.confirm('Czy na pewno chcesz usunąć tę linię?')) return;
     try {
-      await axios.delete(${API_BASE_URL_ADMIN}/lines/, {
-        headers: { Authorization: Bearer  }
+      await axios.delete(`${API_BASE_URL_ADMIN}/lines/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setLines(lines.filter(l => l.id !== id));
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
-      else setError('BÅ‚Ä…d usuwania.');
+      else setError('Błąd usuwania.');
     }
   };
 
@@ -145,7 +143,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="UÅ¼ytkownik" 
+              placeholder="Użytkownik" 
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               className="w-full pl-12 pr-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500" 
@@ -153,13 +151,13 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
           <input 
             type="password" 
-            placeholder="HasÅ‚o" 
+            placeholder="Hasło" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
             className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500" 
           />
           <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-blue-700 transition-all">Zaloguj</button>
-          <button type="button" onClick={onBack} className="w-full text-slate-500 text-xs font-bold uppercase tracking-widest">WrÃ³Ä‡</button>
+          <button type="button" onClick={onBack} className="w-full text-slate-500 text-xs font-bold uppercase tracking-widest">Wróć</button>
         </form>
         {error && <p className="mt-4 text-red-500 text-xs font-bold">{error}</p>}
       </div>
@@ -189,7 +187,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               />
             </div>
             <div className="flex-1 space-y-2 text-left">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Operator / PrzewoÅºnik</label>
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Operator / Przewoźnik</label>
               <div className="relative">
                 <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
@@ -257,7 +255,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500"
                             >
                               {allStops.sort((a, b) => a.name.localeCompare(b.name)).map(s => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.city}){s.direction ?  â†’  : ""}</option>
+                                <option key={s.id} value={s.id}>{s.name} ({s.city}){s.direction ? ` → ${s.direction}` : ""}</option>
                               ))}
                             </select>
                           </div>
@@ -298,7 +296,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 </div>
                               ))
                             ) : (
-                              <p className="text-slate-400 text-[8px] italic uppercase tracking-widest text-left">Brak odjazdÃ³w</p>
+                              <p className="text-slate-400 text-[8px] italic uppercase tracking-widest text-left">Brak odjazdów</p>
                             )}
                           </div>
                         </div>
@@ -323,10 +321,10 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
           <div className="ml-4 text-left">
             <h1 className="text-2xl font-black dark:text-white uppercase tracking-tight">System Administracyjny</h1>  
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">ZarzÄ…dzanie infrastrukturÄ… i danymi</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Zarządzanie infrastrukturą i danymi</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded-md tracking-tighter">
-                {isAdmin ? 'Administrator' : 'UÅ¼ytkownik'}
+                {isAdmin ? 'Administrator' : 'Użytkownik'}
               </span>
             </div>
           </div>
@@ -335,19 +333,19 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl flex text-left">
             <button
               onClick={() => setActiveTab('LINES')}
-              className={lex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all }
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${activeTab === 'LINES' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <List size={16} /> LINIE
             </button>
             <button
               onClick={() => setActiveTab('STOPS')}
-              className={lex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all }
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${activeTab === 'STOPS' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <Settings size={16} /> PRZYSTANKI
             </button>
             <button
               onClick={() => setActiveTab('MAP')}
-              className={lex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all }
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${activeTab === 'MAP' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <MapIcon size={16} /> MAPA
             </button>
