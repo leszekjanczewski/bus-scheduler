@@ -15,9 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -40,18 +38,15 @@ public class DataImportServiceImpl implements DataImportService {
 
         BusLine busLine = getOrCreateBusLine(dto);
 
-        // Usuwamy stare trasy dla tej linii (pełny update)
-        // Ręczne usuwanie i odłączanie od linii, aby uniknąć problemów z sesją Hibernate
         List<Route> existingRoutes = routeRepository.findAllByBusLineId(busLine.getId());
         if (!existingRoutes.isEmpty()) {
-            // Odłączamy trasy od linii przed ich usunięciem
             if (busLine.getRoutes() != null) {
                 busLine.getRoutes().clear();
             }
             routeRepository.deleteAll(existingRoutes);
             routeRepository.flush();
         } else if (busLine.getRoutes() == null) {
-            busLine.setRoutes(new ArrayList<>());
+            busLine.setRoutes(new HashSet<>());
         }
 
         for (ImportRouteDTO routeDto : dto.getRoutes()) {
@@ -63,18 +58,17 @@ public class DataImportServiceImpl implements DataImportService {
         BusLine existingLine = busLineRepository.findByLineNumber(dto.getLineNumber());
         if (existingLine != null) {
             existingLine.setOperator(dto.getOperator());
-            // Wymuszamy załadowanie kolekcji
             if (existingLine.getRoutes() != null) {
                 existingLine.getRoutes().size();
             } else {
-                existingLine.setRoutes(new ArrayList<>());
+                existingLine.setRoutes(new HashSet<>());
             }
             return existingLine;
         }
         return busLineRepository.save(BusLine.builder()
                 .lineNumber(dto.getLineNumber())
                 .operator(dto.getOperator())
-                .routes(new ArrayList<>())
+                .routes(new HashSet<>())
                 .build());
     }
 
@@ -83,13 +77,15 @@ public class DataImportServiceImpl implements DataImportService {
                 .variantName(routeDto.getVariantName())
                 .direction(routeDto.getDirection())
                 .busLine(busLine)
+                .routeStops(new HashSet<>())
+                .trips(new HashSet<>())
                 .build();
-        
-        // Dodajemy do kolekcji w busLine - kaskada CascadeType.ALL zajmie się zapisem
+
+        if (busLine.getRoutes() == null) busLine.setRoutes(new HashSet<>());
         busLine.getRoutes().add(route);
         route = routeRepository.save(route);
 
-        List<RouteStop> routeStops = new ArrayList<>();
+        List<RouteStop> routeStopsList = new ArrayList<>();
         for (ImportRouteStopDTO stopDto : routeDto.getStops()) {
             BusStop busStop = getOrCreateBusStop(stopDto);
             RouteStop routeStop = RouteStop.builder()
@@ -98,11 +94,11 @@ public class DataImportServiceImpl implements DataImportService {
                     .sequenceNumber(stopDto.getSequence())
                     .timeOffsetMinutes(stopDto.getTimeOffset())
                     .build();
-            routeStops.add(routeStopRepository.save(routeStop));
+            routeStopsList.add(routeStopRepository.save(routeStop));
         }
 
         for (ImportTripDTO tripDto : routeDto.getTrips()) {
-            saveTrips(route, tripDto, routeStops);
+            saveTrips(route, tripDto, routeStopsList);
         }
     }
 
@@ -121,10 +117,10 @@ public class DataImportServiceImpl implements DataImportService {
                 Trip trip = Trip.builder()
                         .route(route)
                         .calendarType(tripDto.getCalendarType())
+                        .departures(new HashSet<>())
                         .build();
                 trip = tripRepository.save(trip);
 
-                // Zakładamy, że odjazdy są generowane dla wszystkich przystanków na podstawie startTime + offset
                 for (RouteStop rs : routeStops) {
                     int offset = rs.getTimeOffsetMinutes() != null ? rs.getTimeOffsetMinutes() : 0;
                     Departure departure = Departure.builder()
@@ -136,7 +132,7 @@ public class DataImportServiceImpl implements DataImportService {
                 }
             } catch (DateTimeParseException e) {
                 log.error("Failed to parse start time: {} for route: {}", startTimeStr, route.getVariantName());
-                throw e; // Rzucamy dalej, aby wywołać rollback transakcji
+                throw e;
             }
         }
     }

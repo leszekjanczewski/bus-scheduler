@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalTime;
+import java.util.HashSet;
 
 @Slf4j
 @Component
@@ -54,14 +55,13 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeData() {
-        // 1. Tworzenie Linii 241
         BusLine line241 = BusLine.builder()
                 .lineNumber("241")
                 .operator("Gmina Kłodawa")
+                .routes(new HashSet<>())
                 .build();
         busLineRepository.save(line241);
 
-        // 2. Tworzenie Przystanków
         BusStop stopGorzow = BusStop.builder().name("Gorzów Dworzec").city("Gorzów Wlkp.").build();
         BusStop stopKlodawa = BusStop.builder().name("Kłodawa Urząd Gminy").city("Kłodawa").build();
         BusStop stopRozanki = BusStop.builder().name("Różanki Szkoła").city("Różanki").build();
@@ -70,30 +70,27 @@ public class DataInitializer implements CommandLineRunner {
         busStopRepository.save(stopKlodawa);
         busStopRepository.save(stopRozanki);
 
-        // 3. Tworzenie Trasy (Wariant A: Gorzów -> Różanki)
         Route routeA = Route.builder()
                 .variantName("Wariant A")
                 .direction("Różanki")
                 .busLine(line241)
+                .routeStops(new HashSet<>())
+                .trips(new HashSet<>())
                 .build();
         routeRepository.save(routeA);
 
-        // 4. Przypisanie przystanków do trasy (RouteStop)
-        createRouteStop(routeA, stopGorzow, 1, 0);   // Start: 0 min
-        createRouteStop(routeA, stopKlodawa, 2, 15); // +15 min
-        createRouteStop(routeA, stopRozanki, 3, 25); // +25 min od startu
+        createRouteStop(routeA, stopGorzow, 1, 0);
+        createRouteStop(routeA, stopKlodawa, 2, 15);
+        createRouteStop(routeA, stopRozanki, 3, 25);
 
-        // 5. Tworzenie Kursu (Trip) - np. kurs o 14:15 z Gorzowa
         Trip trip1 = Trip.builder()
                 .route(routeA)
                 .calendarType("WORKDAYS")
+                .departures(new HashSet<>())
                 .build();
         tripRepository.save(trip1);
 
-        // 6. Tworzenie Odjazdów (Departures) dla tego kursu
-        // Zakładamy start o 14:15
         LocalTime startTime = LocalTime.of(14, 15);
-        
         createDeparture(trip1, stopGorzow, startTime);
         createDeparture(trip1, stopKlodawa, startTime.plusMinutes(15));
         createDeparture(trip1, stopRozanki, startTime.plusMinutes(25));
@@ -120,4 +117,3 @@ public class DataInitializer implements CommandLineRunner {
         departureRepository.save(d);
     }
 }
-
