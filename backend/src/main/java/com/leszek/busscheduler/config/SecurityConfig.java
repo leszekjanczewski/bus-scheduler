@@ -39,9 +39,9 @@ public class SecurityConfig {
 
         final String ADMIN = "ADMIN";
         final String USER = "USER";
-        final String API_AUTH_PATTERN = "/api/auth/**";
-        final String API_ADMIN_PATTERN = "/api/admin/**";
-        final String V1_PATTERNS = "/api/v1/**";
+        final String API_AUTH_PATTERN = "/api/v1/auth/**";
+        final String API_ADMIN_PATTERN = "/api/v1/admin/**";
+        final String V1_PUBLIC_PATTERNS = "/api/v1/**";
         final String ERROR_PATTERN = "/error";
 
         http
@@ -51,14 +51,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(API_AUTH_PATTERN).permitAll()
                         .requestMatchers(ERROR_PATTERN).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, V1_PATTERNS).permitAll()
                         
-                        // Konfiguracja dla rÃ³l
+                        // Konfiguracja dla ról ADMIN/USER
                         .requestMatchers(org.springframework.http.HttpMethod.GET, API_ADMIN_PATTERN).hasAnyRole(ADMIN, USER)
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, API_ADMIN_PATTERN).hasAnyRole(ADMIN, USER)
                         .requestMatchers(org.springframework.http.HttpMethod.POST, API_ADMIN_PATTERN).hasRole(ADMIN)
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, API_ADMIN_PATTERN).hasRole(ADMIN)
                         
+                        // Publiczne GETy dla rozkładów
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, V1_PUBLIC_PATTERNS).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
