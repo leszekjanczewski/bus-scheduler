@@ -29,7 +29,7 @@ interface BusStop {
 
 const API_URL = `${API_BASE_URL}/busstops`;
 
-const StopMap: React.FC<{ token: string }> = ({ token }) => {
+const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin }) => {
   const [stops, setStops] = useState<BusStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,11 +54,11 @@ const StopMap: React.FC<{ token: string }> = ({ token }) => {
   if (loading) return <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 text-left">
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between text-left">
+        <div className="flex items-center gap-4 text-left">
           <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-xl"><MapIcon size={24} /></div>
-          <div>
+          <div className="text-left">
             <h2 className="text-xl font-black dark:text-white uppercase tracking-tight">Mapa Przystanków</h2>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Wizualizacja geograficzna Gminy Kłodawa</p>
           </div>
@@ -75,17 +75,17 @@ const StopMap: React.FC<{ token: string }> = ({ token }) => {
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'     
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {stops.map(stop => (
             <Marker key={stop.id} position={[stop.latitude!, stop.longitude!]}>
               <Popup>
-                <div className="p-2">
+                <div className="p-2 text-left">
                   <p className="font-black text-blue-600 mb-0 leading-none">{stop.name}</p>
                   <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{stop.city}</p>
                   <hr className="my-2" />
-                  <p className="text-[9px] font-mono text-slate-500 mb-0">{stop.latitude}, {stop.longitude}</p>
+                  <p className="text-[9px] font-mono text-slate-500 mb-0">{stop.latitude}, {stop.longitude}</p>       
                 </div>
               </Popup>
             </Marker>
@@ -93,10 +93,10 @@ const StopMap: React.FC<{ token: string }> = ({ token }) => {
         </MapContainer>
       </div>
 
-      <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-800 flex items-start gap-4">
+      <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-800 flex items-start gap-4 text-left">
         <AlertCircle className="text-blue-500 shrink-0" size={20} />
-        <p className="text-xs font-medium text-blue-700 dark:text-blue-300 leading-relaxed">
-          Mapa wyświetla tylko te przystanki, które mają uzupełnione współrzędne w zakładce <b>PRZYSTANKI</b>.
+        <p className="text-xs font-medium text-blue-700 dark:text-blue-300 leading-relaxed text-left">
+          Mapa wyświetla tylko te przystanki, które mają uzupełnione współrzędne w zakładce <b>PRZYSTANKI</b>.        
           Kliknij na marker, aby zobaczyć szczegóły lokalizacji.
         </p>
       </div>

@@ -13,7 +13,7 @@ interface BusStop {
   direction?: string;
 }
 
-const API_URL = \/busstops;
+const API_URL = `${API_BASE_URL}/busstops`;
 
 const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin: boolean }> = ({ token, onUnauthorized, isAdmin }) => {
   const [stops, setStops] = useState<BusStop[]>([]);
@@ -30,12 +30,12 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
     setLoading(true);
     try {
       const response = await axios.get(API_URL, {
-        headers: { Authorization: Bearer \ }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setStops(response.data);
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();      
-      else setError('BÅ‚Ä…d podczas pobierania przystankÃ³w.');
+      else setError('Błąd podczas pobierania przystanków.');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
   const openEdit = (stop: BusStop) => {
     setEditingStop(stop);
     setIsAdding(false);
-    setCoordsInput(stop.latitude && stop.longitude ? \, \ : '');
+    setCoordsInput(stop.latitude && stop.longitude ? `${stop.latitude}, ${stop.longitude}` : '');
   };
 
   const openAdd = () => {
@@ -79,11 +79,11 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
     try {
       if (isAdding) {
         await axios.post(API_URL, editingStop, {
-          headers: { Authorization: Bearer \ }
+          headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.put(\/\, editingStop, {
-          headers: { Authorization: Bearer \ }
+        await axios.put(`${API_URL}/${editingStop.id}`, editingStop, {
+          headers: { Authorization: `Bearer ${token}` }
         });
       }
       await fetchStops();
@@ -91,21 +91,21 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
       setError(null);
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();
-      else setError('BÅ‚Ä…d podczas zapisu danych.');
+      else setError('Błąd podczas zapisu danych.');
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!isAdmin) return;
-    if (!window.confirm('Czy na pewno chcesz usunÄ…Ä‡ ten przystanek?')) return;
+    if (!window.confirm('Czy na pewno chcesz usunąć ten przystanek?')) return;
     try {
-      await axios.delete(\/\, {
-        headers: { Authorization: Bearer \ }
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setStops(stops.filter(s => s.id !== id));
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();
-      else setError('BÅ‚Ä…d podczas usuwania. Przystanek moÅ¼e byÄ‡ czÄ™Å›ciÄ… trasy.');
+      else setError('Błąd podczas usuwania. Przystanek może być częścią trasy.');
     }
   };
 
@@ -139,7 +139,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
               onChange={(e) => setSelectedCity(e.target.value)}
               className="w-full pl-12 pr-10 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-transparent focus:border-blue-500 outline-none font-bold appearance-none cursor-pointer text-sm"
             >
-              <option value="ALL">Wszystkie miejscowoÅ›ci</option>
+              <option value="ALL">Wszystkie miejscowości</option>
               {cities.map(city => (
                 <option key={city} value={city}>{city}</option>
               ))}
@@ -169,13 +169,13 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
           filteredStops.map(stop => {
             const hasCoords = stop.latitude && stop.longitude;
             const googleMapsUrl = hasCoords
-              ? https://www.google.com/maps/search/?api=1&query=\,\
-              : https://www.google.com/maps/search/?api=1&query=\; 
+              ? `https://www.google.com/maps/search/?api=1&query=${stop.latitude},${stop.longitude}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + stop.city)}`; 
 
             return (
               <div key={stop.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500 transition-all group relative text-left">
                 <div className="flex justify-between items-start mb-4 text-left">
-                  <div className={p-3 rounded-xl \}>
+                  <div className={`p-3 rounded-xl ${hasCoords ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600' }`}>
                     <MapPin size={20} />
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-left">
@@ -184,7 +184,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
-                      title={hasCoords ? "PokaÅ¼ dokÅ‚adnÄ… lokalizacjÄ™" : "Szukaj w Google Maps"}
+                      title={hasCoords ? "Pokaż dokładną lokalizację" : "Szukaj w Google Maps"}
                     >
                       <ExternalLink size={18} />
                     </a>
@@ -199,7 +199,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                       <button
                         onClick={() => handleDelete(stop.id)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="UsuÅ„"
+                        title="Usuń"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -212,7 +212,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                 <div className="flex flex-wrap gap-1 mb-6 text-left">
                   {stop.directions && stop.directions.map(dir => (
                     <span key={dir} className="text-[8px] font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/50 uppercase flex items-center gap-1">
-                      â†’ {dir}
+                      → {dir}
                     </span>
                   ))}
                 </div>
@@ -232,7 +232,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
           })
         ) : (
           <div className="col-span-full py-20 text-center bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] border border-dashed border-slate-200 dark:border-slate-800">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Nie znaleziono przystankÃ³w speÅ‚niajÄ…cych kryteria</p>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Nie znaleziono przystanków spełniających kryteria</p>
           </div>
         )}
       </div>
@@ -256,7 +256,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
               </div>
 
               <div className="space-y-2 text-left">
-                <label className="text-[10px] font-black uppercase text-blue-500 tracking-widest ml-1 block">Kierunek Jazdy (np. GorzÃ³w, Santocko)</label>
+                <label className="text-[10px] font-black uppercase text-blue-500 tracking-widest ml-1 block">Kierunek Jazdy (np. Gorzów, Santocko)</label>
                 <input
                   value={editingStop.direction || ''}
                   onChange={e => setEditingStop({ ...editingStop, direction: e.target.value })}
@@ -281,7 +281,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                   <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-left">
                     {editingStop.directions.map(dir => (
                       <span key={dir} className="text-[9px] font-black bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full uppercase">
-                        â†’ {dir}
+                        → {dir}
                       </span>
                     ))}
                   </div>
@@ -303,7 +303,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
 
               <div className="grid grid-cols-2 gap-4 opacity-60 text-left">
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">SzerokoÅ›Ä‡ (Lat)</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Szerokość (Lat)</label>
                   <input
                     type="number" step="0.000001"
                     value={editingStop.latitude || ''}
@@ -312,7 +312,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                   />
                 </div>
                 <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">DÅ‚ugoÅ›Ä‡ (Lng)</label>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Długość (Lng)</label>
                   <input
                     type="number" step="0.000001"
                     value={editingStop.longitude || ''}
@@ -322,7 +322,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                 </div>
               </div>
               <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 mt-4">
-                <Save size={18} /> {isAdding ? 'StwÃ³rz Przystanek' : 'Zapisz Przystanek'}
+                <Save size={18} /> {isAdding ? 'Stwórz Przystanek' : 'Zapisz Przystanek'}
               </button>
             </form>
           </div>
