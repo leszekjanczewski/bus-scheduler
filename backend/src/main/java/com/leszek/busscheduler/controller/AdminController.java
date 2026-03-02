@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -42,7 +42,6 @@ public class AdminController {
         return ResponseEntity.notFound().build();
     }
 
-    // ZARZĄDZANIE UŻYTKOWNIKAMI
     @GetMapping("/users")
     public List<User> getAllUsers() {
         return userRepository.findAll();
