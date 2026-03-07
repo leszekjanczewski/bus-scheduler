@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/axiosConfig';
+import { fetchBusStops, invalidateBusStopsCache } from '../api/busStopsCache';
 import { Search, Save, MapPin, Trash2, X, Plus, AlertCircle, Loader2, Filter, ExternalLink, ClipboardPaste, Edit3 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
@@ -29,8 +30,8 @@ const StopManager: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const fetchStops = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get(API_URL);
-      setStops(response.data);
+      const stops = await fetchBusStops();
+      setStops(stops);
     } catch (err: any) {
       if (err.response?.status !== 401) setError('Błąd podczas pobierania przystanków.');
     } finally {
@@ -79,6 +80,7 @@ const StopManager: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       } else {
         await apiClient.put(`${API_URL}/${editingStop.id}`, editingStop);
       }
+      invalidateBusStopsCache();
       await fetchStops();
       setEditingStop(null);
       setError(null);
@@ -92,6 +94,7 @@ const StopManager: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     if (!window.confirm('Czy na pewno chcesz usunąć ten przystanek?')) return;
     try {
       await apiClient.delete(`${API_URL}/${id}`);
+      invalidateBusStopsCache();
       setStops(stops.filter(s => s.id !== id));
     } catch (err: any) {
       if (err.response?.status !== 401) setError('Błąd podczas usuwania. Przystanek może być częścią trasy.');

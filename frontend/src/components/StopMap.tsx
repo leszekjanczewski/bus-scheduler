@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import apiClient from '../api/axiosConfig';
+import { fetchBusStops } from '../api/busStopsCache';
 import { Map as MapIcon, Loader2, AlertCircle } from 'lucide-react';
 
 // Fix for default marker icons in React
@@ -35,18 +35,17 @@ const StopMap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStops = async () => {
+    const loadStops = async () => {
       try {
-        const response = await apiClient.get(API_URL);
-        // Filter only stops with coords
-        setStops(response.data.filter((s: BusStop) => s.latitude && s.longitude));
+        const data = await fetchBusStops();
+        setStops(data.filter((s) => s.latitude && s.longitude));
       } catch (err) {
         setError('Błąd ładowania mapy.');
       } finally {
         setLoading(false);
       }
     };
-    fetchStops();
+    loadStops();
   }, []);
 
   if (loading) return <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
