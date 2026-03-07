@@ -1,7 +1,8 @@
 import { Autocomplete, TextField } from '@mui/material';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Trash2, RefreshCw, ChevronLeft, LogIn, Database, Edit3, Plus, Save, X, Clock, MapPin, List, Settings, LogOut, Building2, Map as MapIcon, User as UserIcon, Users as UsersIcon, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import apiClient from '../api/axiosConfig';
+import { Trash2, ChevronLeft, Database, Edit3, Plus, Save, X, Clock, MapPin, List, Settings, LogOut, Building2, Map as MapIcon, Users as UsersIcon, ShieldCheck } from 'lucide-react';
 import StopManager from './StopManager';
 import StopMap from './StopMap';
 import { API_BASE_URL } from '../config';
@@ -17,19 +18,17 @@ interface User { id: string; username: string; email: string; roles: string[]; }
 const ADMIN_API = `${API_BASE_URL}/admin`;
 const AUTH_API = `${API_BASE_URL}/auth`;
 
-const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const AdminPanel: React.FC = () => {
+  const navigate = useNavigate();
   const [lines, setLines] = useState<BusLine[]>([]);
   const [allStops, setAllStops] = useState<BusStop[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('admin_token'));
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [userRoles, setUserRoles] = useState<string[]>(JSON.parse(localStorage.getItem('user_roles') || '[]'));
   const [error, setError] = useState<string | null>(null);
   const [editingLine, setEditingLine] = useState<BusLine | null>(null);
   const [activeTab, setActiveTab] = useState<'LINES' | 'STOPS' | 'MAP' | 'USERS' | 'PROFILE'>('LINES');
-  
+
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPass, setNewUserPass] = useState('');
@@ -39,62 +38,43 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const isAdmin = userRoles.includes('ROLE_ADMIN');
 
   const handleLogout = () => {
-    setToken(null);
-    setUserRoles([]);
-    localStorage.removeItem('admin_token');
+    localStorage.removeItem('token');
     localStorage.removeItem('user_roles');
-    setEditingLine(null);
+    navigate('/login');
   };
 
-  const fetchInitialData = async (authToken: string) => {
+  const fetchInitialData = async () => {
     setLoading(true);
     try {
       const [linesRes, stopsRes] = await Promise.all([
-        axios.get(`${ADMIN_API}/lines`, { headers: { Authorization: `Bearer ${authToken}` } }),
-        axios.get(`${API_BASE_URL}/busstops`, { headers: { Authorization: `Bearer ${authToken}` } })
+        apiClient.get(`${ADMIN_API}/lines`),
+        apiClient.get(`${API_BASE_URL}/busstops`)
       ]);
       setLines(linesRes.data);
       setAllStops(stopsRes.data);
       if (isAdmin) {
-        const usersRes = await axios.get(`${ADMIN_API}/users`, { headers: { Authorization: `Bearer ${authToken}` } });
+        const usersRes = await apiClient.get(`${ADMIN_API}/users`);
         setUsers(usersRes.data);
       }
       setError(null);
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
-      else setError('Błąd pobierania danych.');
+      if (err.response?.status === 403) setError('Brak uprawnień.');
+      else if (err.response?.status !== 401) setError('Błąd pobierania danych.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (token) fetchInitialData(token);
-  }, [token]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post(`${AUTH_API}/login`, { username, password });
-      const newToken = response.data.token;
-      const roles = response.data.roles;
-      setToken(newToken);
-      setUserRoles(roles);
-      localStorage.setItem('admin_token', newToken);
-      localStorage.setItem('user_roles', JSON.stringify(roles));
-      fetchInitialData(newToken);
-      setError(null);
-    } catch (err) {
-      setError('Błędne dane logowania.');
-    }
-  };
+    fetchInitialData();
+  }, []);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${ADMIN_API}/users`, { username: newUserName, email: newUserEmail, password: newUserPass, roles: [newUserRole] }, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.post(`${ADMIN_API}/users`, { username: newUserName, email: newUserEmail, password: newUserPass, roles: [newUserRole] });
       setNewUserName(''); setNewUserEmail(''); setNewUserPass('');
-      fetchInitialData(token!);
+      fetchInitialData();
       alert('Użytkownik dodany!');
     } catch (err) { alert('Błąd dodawania.'); }
   };
@@ -102,7 +82,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleChangeOwnPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.put(`${AUTH_API}/change-password`, { password: newPassword }, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.put(`${AUTH_API}/change-password`, { password: newPassword });
       setNewPassword('');
       alert('Hasło zmienione!');
     } catch (err) { alert('Błąd zmiany hasła.'); }
@@ -112,20 +92,20 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!editingLine) return;
     setLoading(true);
     try {
-      await axios.put(`${ADMIN_API}/lines/${editingLine.id}`, editingLine, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.put(`${ADMIN_API}/lines/${editingLine.id}`, editingLine);
       setLines(lines.map(l => l.id === editingLine.id ? editingLine : l));
       setEditingLine(null);
       alert('Zapisano pomyślnie!');
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
-      else setError('Błąd zapisu danych.');
+      if (err.response?.status === 403) setError('Brak uprawnień.');
+      else if (err.response?.status !== 401) setError('Błąd zapisu danych.');
     } finally { setLoading(false); }
   };
 
   const handleDeleteLine = async (id: number) => {
     if (!isAdmin || !window.confirm('Usunąć linię?')) return;
     try {
-      await axios.delete(`${ADMIN_API}/lines/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.delete(`${ADMIN_API}/lines/${id}`);
       setLines(lines.filter(l => l.id !== id));
     } catch (err: any) { setError('Błąd usuwania.'); }
   };
@@ -147,25 +127,6 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     });
     return groups;
   };
-
-  if (!token) {
-    return (
-      <div className="max-w-md mx-auto mt-20 p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl text-center text-left">
-        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><LogIn className="text-white" size={24} /></div>
-        <h2 className="text-2xl font-black mb-6 dark:text-white uppercase tracking-tight">Panel Logowania</h2>
-        <form onSubmit={handleLogin} className="space-y-4 text-left">
-          <div className="relative">
-            <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input type="text" placeholder="Użytkownik" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full pl-12 pr-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
-          </div>
-          <input type="password" placeholder="Hasło" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
-          <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Zaloguj</button>
-          <button type="button" onClick={onBack} className="w-full text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Wróć do serwisu</button>
-        </form>
-        {error && <p className="mt-4 text-red-500 text-xs font-bold">{error}</p>}
-      </div>
-    );
-  }
 
   if (editingLine) {
     return (
@@ -224,7 +185,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   {route.routeStops && Array.from(route.routeStops).sort((a, b) => a.sequenceNumber - b.sequenceNumber).map((rs, rsIdx) => (
                     <div key={rs.id || rsIdx} className="relative pl-16 pb-12 last:pb-0 text-left">
                       <div className="absolute left-0 w-9 h-9 rounded-full bg-white dark:bg-slate-900 border-4 border-blue-500 flex items-center justify-center font-black text-[10px] z-10 shadow-sm">{rs.sequenceNumber}</div>
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 text-left">   
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 text-left">
                         <div className="flex-1 space-y-2 text-left">
                           <select
                             value={rs.busStop?.id}
@@ -257,7 +218,7 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 onChange={e => {
                                   const newRoutes = [...Array.from(editingLine.routes)];
                                   const newStops = [...Array.from(newRoutes[rIdx].routeStops)];
-                                  newStops[rsIdx] = { ...rs, timeOffsetMinutes: parseInt(e.target.value) || 0 };    
+                                  newStops[rsIdx] = { ...rs, timeOffsetMinutes: parseInt(e.target.value) || 0 };
                                   newRoutes[rIdx].routeStops = newStops;
                                   setEditingLine({ ...editingLine, routes: newRoutes });
                                 }}
@@ -292,11 +253,11 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="max-w-7xl mx-auto px-6 py-12 text-left">
       <div className="flex items-center justify-between mb-16 text-left">
         <div className="flex items-center gap-2 text-left">
-          <button onClick={onBack} className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500 transition-all text-left">
+          <button onClick={() => navigate('/')} className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500 transition-all text-left">
             <ChevronLeft size={20} className="text-slate-500" />
           </button>
           <div className="ml-4 text-left">
-            <h1 className="text-2xl font-black dark:text-white uppercase tracking-tight">System Administracyjny</h1>  
+            <h1 className="text-2xl font-black dark:text-white uppercase tracking-tight">System Administracyjny</h1>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Rola: {isAdmin ? 'Administrator' : 'Użytkownik'}</p>
           </div>
         </div>
@@ -341,9 +302,9 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </table>
         </div>
       ) : activeTab === 'STOPS' ? (
-        <StopManager token={token!} onUnauthorized={handleLogout} isAdmin={isAdmin} />
+        <StopManager isAdmin={isAdmin} />
       ) : activeTab === 'MAP' ? (
-        <StopMap token={token!} isAdmin={isAdmin} />
+        <StopMap />
       ) : activeTab === 'USERS' ? (
         <div className="max-w-4xl mx-auto space-y-8 text-left">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 text-left">
@@ -368,10 +329,10 @@ const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                      <td className="px-8 py-4 text-right text-left">
                         <button onClick={async () => {
                           const p = prompt('Nowe hasło:');
-                          if(p) { await axios.put(`${ADMIN_API}/users/${u.id}/password`, { password: p }, { headers: { Authorization: `Bearer ${token}` } }); alert('Zmieniono'); }
+                          if(p) { await apiClient.put(`${ADMIN_API}/users/${u.id}/password`, { password: p }); alert('Zmieniono'); }
                         }} className="text-blue-600 font-bold text-xs uppercase mr-4 text-left">Hasło</button>
                         <button onClick={async () => {
-                          if(confirm('Usunąć?')) { await axios.delete(`${ADMIN_API}/users/${u.id}`, { headers: { Authorization: `Bearer ${token}` } }); fetchInitialData(token!); }
+                          if(confirm('Usunąć?')) { await apiClient.delete(`${ADMIN_API}/users/${u.id}`); fetchInitialData(); }
                         }} className="text-red-600 font-bold text-xs uppercase text-left">Usuń</button>
                      </td>
                    </tr>

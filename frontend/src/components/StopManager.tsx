@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import apiClient from '../api/axiosConfig';
 import { Search, Save, MapPin, Trash2, X, Plus, AlertCircle, Loader2, Filter, ExternalLink, ClipboardPaste, Edit3 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
@@ -15,7 +15,7 @@ interface BusStop {
 
 const API_URL = `${API_BASE_URL}/busstops`;
 
-const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin: boolean }> = ({ token, onUnauthorized, isAdmin }) => {
+const StopManager: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [stops, setStops] = useState<BusStop[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
@@ -29,13 +29,10 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
   const fetchStops = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await apiClient.get(API_URL);
       setStops(response.data);
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();      
-      else setError('Błąd podczas pobierania przystanków.');
+      if (err.response?.status !== 401) setError('Błąd podczas pobierania przystanków.');
     } finally {
       setLoading(false);
     }
@@ -78,20 +75,15 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
 
     try {
       if (isAdding) {
-        await axios.post(API_URL, editingStop, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await apiClient.post(API_URL, editingStop);
       } else {
-        await axios.put(`${API_URL}/${editingStop.id}`, editingStop, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await apiClient.put(`${API_URL}/${editingStop.id}`, editingStop);
       }
       await fetchStops();
       setEditingStop(null);
       setError(null);
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();
-      else setError('Błąd podczas zapisu danych.');
+      if (err.response?.status !== 401) setError('Błąd podczas zapisu danych.');
     }
   };
 
@@ -99,13 +91,10 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
     if (!isAdmin) return;
     if (!window.confirm('Czy na pewno chcesz usunąć ten przystanek?')) return;
     try {
-      await axios.delete(`${API_URL}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.delete(`${API_URL}/${id}`);
       setStops(stops.filter(s => s.id !== id));
     } catch (err: any) {
-      if (err.response?.status === 401 || err.response?.status === 403) onUnauthorized();
-      else setError('Błąd podczas usuwania. Przystanek może być częścią trasy.');
+      if (err.response?.status !== 401) setError('Błąd podczas usuwania. Przystanek może być częścią trasy.');
     }
   };
 
@@ -170,7 +159,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
             const hasCoords = stop.latitude && stop.longitude;
             const googleMapsUrl = hasCoords
               ? `https://www.google.com/maps/search/?api=1&query=${stop.latitude},${stop.longitude}`
-              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + stop.city)}`; 
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name + ' ' + stop.city)}`;
 
             return (
               <div key={stop.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500 transition-all group relative text-left">
@@ -207,7 +196,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                   </div>
                 </div>
                 <h3 className="text-lg font-black dark:text-white mb-1 truncate pr-10">{stop.name}</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{stop.city}</p>        
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{stop.city}</p>
 
                 <div className="flex flex-wrap gap-1 mb-6 text-left">
                   {stop.directions && stop.directions.map(dir => (
@@ -220,11 +209,11 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
                 <div className="flex gap-4 text-left">
                   <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
                     <p className="text-[8px] font-black text-slate-400 uppercase mb-1">LAT</p>
-                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.latitude || '---'}</p>       
+                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.latitude || '---'}</p>
                   </div>
                   <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
                     <p className="text-[8px] font-black text-slate-400 uppercase mb-1">LNG</p>
-                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.longitude || '---'}</p>      
+                    <p className="text-[10px] font-mono font-bold dark:text-white">{stop.longitude || '---'}</p>
                   </div>
                 </div>
               </div>
@@ -291,7 +280,7 @@ const StopManager: React.FC<{ token: string, onUnauthorized: () => void, isAdmin
               <div className="space-y-2 text-left">
                 <label className="text-[10px] font-black uppercase text-blue-600 tracking-widest ml-1 block">Szybkie Wklejanie (Lat, Lng)</label>
                 <div className="relative text-left">
-                  <ClipboardPaste className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={18} />     
+                  <ClipboardPaste className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={18} />
                   <input
                     placeholder="Wklej: 52.79, 15.32"
                     value={coordsInput}

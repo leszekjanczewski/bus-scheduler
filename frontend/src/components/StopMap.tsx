@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
+import apiClient from '../api/axiosConfig';
 import { Map as MapIcon, Loader2, AlertCircle } from 'lucide-react';
 
 // Fix for default marker icons in React
@@ -29,7 +29,7 @@ interface BusStop {
 
 const API_URL = `${API_BASE_URL}/busstops`;
 
-const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin }) => {
+const StopMap: React.FC = () => {
   const [stops, setStops] = useState<BusStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +37,7 @@ const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin
   useEffect(() => {
     const fetchStops = async () => {
       try {
-        const response = await axios.get(API_URL, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await apiClient.get(API_URL);
         // Filter only stops with coords
         setStops(response.data.filter((s: BusStop) => s.latitude && s.longitude));
       } catch (err) {
@@ -49,7 +47,7 @@ const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin
       }
     };
     fetchStops();
-  }, [token]);
+  }, []);
 
   if (loading) return <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
 
@@ -75,7 +73,7 @@ const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'     
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {stops.map(stop => (
@@ -85,7 +83,7 @@ const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin
                   <p className="font-black text-blue-600 mb-0 leading-none">{stop.name}</p>
                   <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{stop.city}</p>
                   <hr className="my-2" />
-                  <p className="text-[9px] font-mono text-slate-500 mb-0">{stop.latitude}, {stop.longitude}</p>       
+                  <p className="text-[9px] font-mono text-slate-500 mb-0">{stop.latitude}, {stop.longitude}</p>
                 </div>
               </Popup>
             </Marker>
@@ -96,7 +94,7 @@ const StopMap: React.FC<{ token: string, isAdmin: boolean }> = ({ token, isAdmin
       <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-800 flex items-start gap-4 text-left">
         <AlertCircle className="text-blue-500 shrink-0" size={20} />
         <p className="text-xs font-medium text-blue-700 dark:text-blue-300 leading-relaxed text-left">
-          Mapa wyświetla tylko te przystanki, które mają uzupełnione współrzędne w zakładce <b>PRZYSTANKI</b>.        
+          Mapa wyświetla tylko te przystanki, które mają uzupełnione współrzędne w zakładce <b>PRZYSTANKI</b>.
           Kliknij na marker, aby zobaczyć szczegóły lokalizacji.
         </p>
       </div>
