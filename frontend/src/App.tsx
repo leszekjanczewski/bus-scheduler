@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import apiClient from './api/axiosConfig';
 import SearchForm from './components/SearchForm';
 import ResultsList from './components/ResultsList';
 import Loader from './components/Loader';
 import EmptyState from './components/EmptyState';
-import AdminPanel from './components/AdminPanel';
 import type { ConnectionDTO, BusStopDTO, StopDepartureDTO } from './types';
 import { useDarkMode } from './hooks/useDarkMode';
 import ThemeToggle from './components/ThemeToggle';
@@ -14,18 +14,18 @@ import { API_BASE_URL } from './config';
 function App() {
   const { theme, toggleTheme } = useDarkMode();
   const [connections, setConnections] = useState<ConnectionDTO[]>([])
-  const [departures, setDepartures] = useState<StopDepartureDTO[]>([])        
-  const [availableStops, setAvailableStops] = useState<BusStopDTO[]>([])      
+  const [departures, setDepartures] = useState<StopDepartureDTO[]>([])
+  const [availableStops, setAvailableStops] = useState<BusStopDTO[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [backendError, setBackendError] = useState<boolean>(false)
-  const [isAdminMode, setIsAdminMode] = useState(false)
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStops = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/busstops`);
+        const response = await apiClient.get(`${API_BASE_URL}/busstops`);
         setAvailableStops(response.data);
         setBackendError(false);
       } catch (err) {
@@ -45,12 +45,12 @@ function App() {
 
     try {
       if (toId) {
-        const response = await axios.get(`${API_BASE_URL}/search`, {
+        const response = await apiClient.get(`${API_BASE_URL}/search`, {
           params: { fromId, toId, time }
         });
         setConnections(response.data);
       } else {
-        const response = await axios.get(`${API_BASE_URL}/departures/stop/${fromId}`, {
+        const response = await apiClient.get(`${API_BASE_URL}/departures/stop/${fromId}`, {
           params: { time }
         });
         setDepartures(response.data);
@@ -60,7 +60,7 @@ function App() {
       console.error('Błąd podczas wyszukiwania:', err);
       let errorMessage = 'Nie udało się połączyć z serwerem.';
       if (err.response) {
-        errorMessage = err.response.data.message || `Błąd serwera (${err.response.status})`;   
+        errorMessage = err.response.data.message || `Błąd serwera (${err.response.status})`;
       } else if (err.request) {
         setBackendError(true);
       }
@@ -68,10 +68,6 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  if (isAdminMode) {
-    return <AdminPanel onBack={() => setIsAdminMode(false)} />;
   }
 
   return (
@@ -93,7 +89,7 @@ function App() {
               <Github size={20} />
             </a>
             <button
-              onClick={() => setIsAdminMode(true)}
+              onClick={() => navigate('/admin')}
               className="group flex items-center gap-2 bg-slate-900 dark:bg-slate-800 text-white p-2.5 sm:px-5 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-sm"
             >
               <Settings size={14} className="group-hover:rotate-90 transition-transform duration-500" />
@@ -118,11 +114,11 @@ function App() {
           {isLoading && <Loader />}
 
           {error && (
-            <div className="max-w-2xl mx-auto p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-start gap-4 text-rose-600 shadow-sm animate-in zoom-in-95 duration-300">        
+            <div className="max-w-2xl mx-auto p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-start gap-4 text-rose-600 shadow-sm animate-in zoom-in-95 duration-300">
               <AlertCircle className="shrink-0 mt-0.5" size={24} />
               <div>
                 <h4 className="font-bold text-lg mb-1">Wystąpił problem</h4>
-                <p className="text-sm font-medium opacity-90 leading-relaxed">{error}</p>      
+                <p className="text-sm font-medium opacity-90 leading-relaxed">{error}</p>
               </div>
             </div>
           )}
