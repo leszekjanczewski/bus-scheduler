@@ -2,6 +2,7 @@ import { Autocomplete, TextField } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/axiosConfig';
+import { fetchBusStops } from '../api/busStopsCache';
 import { Trash2, ChevronLeft, Database, Edit3, Plus, Save, X, Clock, MapPin, List, Settings, LogOut, Building2, Map as MapIcon, Users as UsersIcon, ShieldCheck } from 'lucide-react';
 import StopManager from './StopManager';
 import StopMap from './StopMap';
@@ -46,12 +47,12 @@ const AdminPanel: React.FC = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [linesRes, stopsRes] = await Promise.all([
+      const [linesRes, stops] = await Promise.all([
         apiClient.get(`${ADMIN_API}/lines`),
-        apiClient.get(`${API_BASE_URL}/busstops`)
+        fetchBusStops()
       ]);
       setLines(linesRes.data);
-      setAllStops(stopsRes.data);
+      setAllStops(stops);
       if (isAdmin) {
         const usersRes = await apiClient.get(`${ADMIN_API}/users`);
         setUsers(usersRes.data);

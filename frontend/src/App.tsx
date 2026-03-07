@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from './api/axiosConfig';
+import { fetchBusStops } from './api/busStopsCache';
 import SearchForm from './components/SearchForm';
 import ResultsList from './components/ResultsList';
 import Loader from './components/Loader';
@@ -23,17 +24,17 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchStops = async () => {
+    const loadStops = async () => {
       try {
-        const response = await apiClient.get(`${API_BASE_URL}/busstops`);
-        setAvailableStops(response.data);
+        const stops = await fetchBusStops();
+        setAvailableStops(stops);
         setBackendError(false);
       } catch (err) {
         console.error('Failed to fetch bus stops:', err);
         setBackendError(true);
       }
     };
-    fetchStops();
+    loadStops();
   }, []);
 
   const handleSearch = async (fromId: number, toId: number | null, time: string) => {

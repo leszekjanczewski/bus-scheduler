@@ -28,6 +28,8 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
         return now.toTimeString().slice(0, 5);
     });
 
+    // Ref-flag: set to true when user hits cancel, checked in async GPS callbacks
+    const cancelledRef = useRef(false);
     const [isLocating, setIsLocating] = useState(false);
     const [detectedAddress, setDetectedAddress] = useState<string | null>(null);
     const [showAddressPrompt, setShowAddressPrompt] = useState(false);
@@ -151,6 +153,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
     };
 
     const handleAutoLocation = () => {
+        cancelledRef.current = false;
         setIsLocating(true);
         setShowAddressPrompt(false);
         setDetectedAddress(null);
@@ -159,20 +162,19 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
             setIsLocating(false);
             return;
         }
-        const timeout = setTimeout(() => {
-            if (isLocating) { setShowAddressPrompt(true); setIsLocating(false); }
-        }, 4000);
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                clearTimeout(timeout);
+                if (cancelledRef.current) return;
                 const { latitude, longitude } = pos.coords;
                 try {
                     const rev = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`);
-                    if (rev.data) setDetectedAddress(formatAddress(rev.data));
+                    if (rev.data && !cancelledRef.current) setDetectedAddress(formatAddress(rev.data));
 
+                    if (cancelledRef.current) return;
                     const apiBase = import.meta.env.VITE_API_URL || '';
                     const res = await axios.get(`${apiBase}/api/v1/busstops/nearby?lat=${latitude}&lon=${longitude}`);
 
+                    if (cancelledRef.current) return;
                     if (res.data && res.data.length > 0) {
                         setNearbyAlternatives(res.data);
                         setAltIndex(0);
@@ -180,18 +182,32 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
                         setFromId(res.data[0].id);
                         setShowFromSuggestions(true);
                     } else {
-                        const foundLocally = findAndSetNearestStop(latitude, longitude);       
+                        const foundLocally = findAndSetNearestStop(latitude, longitude);
                         if (!foundLocally) setShowAddressPrompt(true);
                     }
                 } catch(e) {
+                    if (cancelledRef.current) return;
                     const foundLocally = findAndSetNearestStop(latitude, longitude);
                     if (!foundLocally) setShowAddressPrompt(true);
                 }
                 setIsLocating(false);
             },
-            () => { clearTimeout(timeout); setShowAddressPrompt(true); setIsLocating(false); },
-            { enableHighAccuracy: true, timeout: 5000 }
+            () => {
+                if (cancelledRef.current) return;
+                setShowAddressPrompt(true);
+                setIsLocating(false);
+            },
+            // enableHighAccuracy: false → szybka odpowiedź z sieci/WiFi zamiast GPS hardware
+            // maximumAge: 60000    → akceptuj pozycję z ostatnich 60s (cache przeglądarki)
+            // timeout: 5000        → po 5s wywołaj error callback zamiast "wisieć" w nieskończoność
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
         );
+    };
+
+    const handleCancelLocation = () => {
+        cancelledRef.current = true;
+        setIsLocating(false);
+        setShowAddressPrompt(true);
     };
 
     const filteredFromStops = availableStops
@@ -223,9 +239,17 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
         <div className="w-full px-4 text-left">
             <div className="max-w-4xl mx-auto mb-4 min-h-[40px] flex flex-col items-center">   
                 {isLocating ? (
-                    <div className="flex items-center gap-2 text-blue-500 animate-pulse bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full">
-                        <Loader2 size={14} className="animate-spin" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Szukam Cię...</span>
+                    <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full">
+                        <Loader2 size={14} className="animate-spin text-blue-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 animate-pulse">Szukam Cię...</span>
+                        <button
+                            type="button"
+                            onClick={handleCancelLocation}
+                            title="Anuluj GPS i wpisz adres ręcznie"
+                            className="ml-1 p-1 hover:bg-blue-200 dark:hover:bg-blue-700 rounded-full transition-colors text-blue-600 dark:text-blue-400 shrink-0"
+                        >
+                            <X size={12} strokeWidth={3} />
+                        </button>
                     </div>
                 ) : detectedAddress ? (
                     <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 px-6 py-2.5 rounded-full animate-in fade-in shadow-sm">
