@@ -12,9 +12,20 @@ import java.util.Optional;
 public interface BusLineRepository extends JpaRepository<BusLine, Long> {
     BusLine findByLineNumber(String lineNumber);
 
-    // Lightweight: only lines + routes — no deep collections (fast list view)
-    @Query("SELECT DISTINCT b FROM BusLine b LEFT JOIN FETCH b.routes r")
-    List<BusLine> findAllWithRoutes();
+    // Step 1 for list: lines + routes + routeStops + busStop per stop
+    @Query("SELECT DISTINCT b FROM BusLine b " +
+           "LEFT JOIN FETCH b.routes r " +
+           "LEFT JOIN FETCH r.routeStops rs " +
+           "LEFT JOIN FETCH rs.busStop")
+    List<BusLine> findAllWithRoutesAndStops();
+
+    // Step 2 for list: lines + routes + trips + departures + busStop per departure
+    @Query("SELECT DISTINCT b FROM BusLine b " +
+           "LEFT JOIN FETCH b.routes r " +
+           "LEFT JOIN FETCH r.trips t " +
+           "LEFT JOIN FETCH t.departures d " +
+           "LEFT JOIN FETCH d.busStop")
+    List<BusLine> findAllWithRoutesAndTrips();
 
     // Step 1 for full detail: routes + routeStops + busStop per stop
     @Query("SELECT DISTINCT b FROM BusLine b " +
