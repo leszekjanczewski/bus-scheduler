@@ -12,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -31,7 +33,11 @@ public class BusSearchServiceImpl implements BusSearchService {
         busStopRepository.findById(request.toId())
                 .orElseThrow(() -> new StopNotFoundException("Stop not found ID: " + request.toId()));
 
-        List<Object[]> rawConnections = tripRepository.findConnections(request.fromId(), request.toId(), request.time());
+        LocalDate date = request.date() != null ? request.date() : LocalDate.now();
+        String calendarType = determineDayType(date);
+
+        List<Object[]> rawConnections = tripRepository.findConnections(
+                request.fromId(), request.toId(), request.time(), calendarType);
 
         return rawConnections.stream()
                 .map(obj -> {
@@ -50,5 +56,12 @@ public class BusSearchServiceImpl implements BusSearchService {
                     );
                 })
                 .toList();
+    }
+
+    private String determineDayType(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY) return "Soboty";
+        if (day == DayOfWeek.SUNDAY)   return "Niedziele i święta";
+        return "Dni robocze";
     }
 }

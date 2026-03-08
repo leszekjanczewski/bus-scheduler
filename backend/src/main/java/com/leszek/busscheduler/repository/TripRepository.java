@@ -17,14 +17,16 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
 
     List<Trip> findByRouteId(Long routeId);
 
-        @Query("SELECT dFrom, dTo, dFrom.trip.route.direction FROM Departure dFrom, Departure dTo " +
+    @Query("SELECT dFrom, dTo, dFrom.trip.route.direction FROM Departure dFrom, Departure dTo " +
            "WHERE dFrom.trip = dTo.trip " +
            "AND dFrom.busStop.id = :fromStopId " +
            "AND dTo.busStop.id = :toStopId " +
            "AND dFrom.departureTime >= :startTime " +
            "AND dFrom.departureTime < dTo.departureTime " +
+           "AND dFrom.trip.calendarType = :calendarType " +
            "ORDER BY dFrom.departureTime ASC")
     List<Object[]> findConnections(@Param("fromStopId") Long fromStopId,
                                    @Param("toStopId") Long toStopId,
-                                   @Param("startTime") LocalTime startTime);
+                                   @Param("startTime") LocalTime startTime,
+                                   @Param("calendarType") String calendarType);
 }

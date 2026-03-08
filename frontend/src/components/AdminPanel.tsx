@@ -164,6 +164,17 @@ const AdminPanel: React.FC = () => {
     setEditingLine({ ...editingLine!, routes: newRoutes });
   };
 
+  const handleDepartureTimeChange = (rIdx: number, route: Route, tripIdx: number, dep: Departure, newTime: string) => {
+    const newRoutes = [...Array.from(editingLine!.routes)];
+    const newTrips = [...Array.from(route.trips || [])];
+    const newDeps = (newTrips[tripIdx].departures || []).map(d =>
+      d === dep ? { ...d, departureTime: newTime + ':00' } : d
+    );
+    newTrips[tripIdx] = { ...newTrips[tripIdx], departures: newDeps };
+    newRoutes[rIdx] = { ...route, trips: newTrips };
+    setEditingLine({ ...editingLine!, routes: newRoutes });
+  };
+
   const handleDeleteTrip = (rIdx: number, route: Route, tripIdx: number) => {
     const newRoutes = [...Array.from(editingLine!.routes)];
     const trips = [...Array.from(route.trips || [])];
@@ -306,15 +317,31 @@ const AdminPanel: React.FC = () => {
 
                 <div className="space-y-3 mb-6 text-left">
                   {Array.from(route.trips || []).map((trip, tripIdx) => (
-                    <div key={trip.id ?? `new-${tripIdx}`} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 text-left">
-                      <div className="flex items-center gap-4 text-left">
-                        <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-[10px] font-black uppercase">{trip.calendarType}</span>
-                        <span className="font-mono font-bold text-slate-700 dark:text-slate-200 text-sm">{getTripStartTime(trip)}</span>
-                        <span className="text-[10px] text-slate-400 font-bold">{trip.departures?.length || 0} odjazdów</span>
+                    <div key={trip.id ?? `new-${tripIdx}`} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden text-left">
+                      <div className="flex items-center justify-between px-4 py-3 text-left">
+                        <div className="flex items-center gap-3">
+                          <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-[10px] font-black uppercase">{trip.calendarType}</span>
+                          <span className="text-[10px] text-slate-400 font-bold">{trip.departures?.length || 0} przystanków</span>
+                        </div>
+                        <button onClick={() => handleDeleteTrip(rIdx, route, tripIdx)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                      <button onClick={() => handleDeleteTrip(rIdx, route, tripIdx)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                        <Trash2 size={16} />
-                      </button>
+                      {trip.departures && trip.departures.length > 0 && (
+                        <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-700/50 space-y-2 text-left">
+                          {[...trip.departures].sort((a, b) => a.departureTime.localeCompare(b.departureTime)).map((dep, depIdx) => (
+                            <div key={dep.id ?? depIdx} className="flex items-center gap-3 text-left">
+                              <span className="flex-1 text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{dep.busStop.name}</span>
+                              <input
+                                type="time"
+                                value={dep.departureTime.substring(0, 5)}
+                                onChange={e => handleDepartureTimeChange(rIdx, route, tripIdx, dep, e.target.value)}
+                                className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-bold text-sm text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 outline-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

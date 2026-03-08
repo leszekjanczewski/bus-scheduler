@@ -105,7 +105,19 @@ public class AdminController {
 
                                     for (Trip incomingTrip : updatedRouteData.getTrips()) {
                                         if (incomingTrip.getId() != null && existingTripsById.containsKey(incomingTrip.getId())) {
-                                            existingTripsById.get(incomingTrip.getId()).setCalendarType(incomingTrip.getCalendarType());
+                                            Trip existingTrip = existingTripsById.get(incomingTrip.getId());
+                                            existingTrip.setCalendarType(incomingTrip.getCalendarType());
+                                            // Update manually-edited departure times
+                                            if (incomingTrip.getDepartures() != null && existingTrip.getDepartures() != null) {
+                                                Map<Long, Departure> existingDepsById = existingTrip.getDepartures().stream()
+                                                        .filter(d -> d.getId() != null)
+                                                        .collect(Collectors.toMap(Departure::getId, d -> d));
+                                                for (Departure incomingDep : incomingTrip.getDepartures()) {
+                                                    if (incomingDep.getId() != null && existingDepsById.containsKey(incomingDep.getId())) {
+                                                        existingDepsById.get(incomingDep.getId()).setDepartureTime(incomingDep.getDepartureTime());
+                                                    }
+                                                }
+                                            }
                                         } else if (incomingTrip.getId() == null) {
                                             Trip newTrip = new Trip();
                                             newTrip.setCalendarType(incomingTrip.getCalendarType());

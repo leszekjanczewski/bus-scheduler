@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,8 +26,9 @@ public class BusSearchController {
     public ResponseEntity<List<ConnectionDTO>> search(
             @RequestParam(name = "fromId") Long fromId,
             @RequestParam(name = "toId") Long toId,
-            @RequestParam(name = "time") @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time) {
-        SearchRequest request = new SearchRequest(fromId, toId, time);
+            @RequestParam(name = "time") @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time,
+            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        SearchRequest request = new SearchRequest(fromId, toId, time, date);
         List<ConnectionDTO> results = busSearchService.search(request);
         return ResponseEntity.ok(results);
     }
