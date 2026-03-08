@@ -17,6 +17,9 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
 
     List<Trip> findByRouteId(Long routeId);
 
+    @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.departures d LEFT JOIN FETCH d.busStop WHERE t.route.id = :routeId")
+    List<Trip> findByRouteIdWithDepartures(@Param("routeId") Long routeId);
+
     @Query("SELECT dFrom, dTo, dFrom.trip.route.direction FROM Departure dFrom, Departure dTo " +
            "WHERE dFrom.trip = dTo.trip " +
            "AND dFrom.busStop.id = :fromStopId " +

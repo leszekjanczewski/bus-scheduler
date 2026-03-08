@@ -2,15 +2,15 @@ package com.leszek.busscheduler.controller;
 
 import com.leszek.busscheduler.domain.*;
 import com.leszek.busscheduler.dto.ImportBusLineDTO;
-import com.leszek.busscheduler.repository.UserRepository;
+import com.leszek.busscheduler.repository.*;
 import com.leszek.busscheduler.service.BusLineService;
 import com.leszek.busscheduler.service.DataImportService;
-import com.leszek.busscheduler.repository.BusStopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +24,9 @@ public class AdminController {
     private final BusStopRepository busStopRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TripRepository tripRepository;
+    private final DepartureRepository departureRepository;
+    private final RouteRepository routeRepository;
 
     @GetMapping("/test")
     public String adminTest() {
@@ -155,6 +158,71 @@ public class AdminController {
     public ResponseEntity<Void> deleteLine(@PathVariable Long id) {
         if (busLineService.deleteById(id)) return ResponseEntity.ok().build();
         return ResponseEntity.notFound().build();
+    }
+
+    // ── Atomic trip/departure endpoints ────────────────────────────────────────
+
+    @GetMapping("/routes/{id}/trips")
+    public ResponseEntity<List<Trip>> getTripsByRoute(@PathVariable Long id) {
+        return ResponseEntity.ok(tripRepository.findByRouteIdWithDepartures(id));
+    }
+
+    @PostMapping("/routes/{id}/trips")
+    public ResponseEntity<Trip> addTrip(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return routeRepository.findByIdWithStops(id)
+                .map(route -> {
+                    LocalTime startTime = LocalTime.parse(body.get("startTime"));
+                    String calendarType = body.get("calendarType");
+
+                    Trip trip = new Trip();
+                    trip.setRoute(route);
+                    trip.setCalendarType(calendarType);
+
+                    Set<Departure> departures = route.getRouteStops().stream()
+                            .sorted(Comparator.comparing(RouteStop::getSequenceNumber))
+                            .map(rs -> {
+                                Departure d = new Departure();
+                                d.setTrip(trip);
+                                d.setBusStop(rs.getBusStop());
+                                int offset = rs.getTimeOffsetMinutes() != null ? rs.getTimeOffsetMinutes() : 0;
+                                d.setDepartureTime(startTime.plusMinutes(offset));
+                                return d;
+                            })
+                            .collect(Collectors.toSet());
+                    trip.setDepartures(departures);
+
+                    return ResponseEntity.ok(tripRepository.save(trip));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/trips/{id}")
+    public ResponseEntity<Void> deleteTrip(@PathVariable Long id) {
+        if (!tripRepository.existsById(id)) return ResponseEntity.notFound().build();
+        tripRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/trips/{id}/calendar")
+    public ResponseEntity<Void> updateTripCalendar(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return tripRepository.findById(id)
+                .map(trip -> {
+                    trip.setCalendarType(body.get("calendarType"));
+                    tripRepository.save(trip);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/departures/{id}")
+    public ResponseEntity<Void> updateDepartureTime(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return departureRepository.findById(id)
+                .map(dep -> {
+                    dep.setDepartureTime(LocalTime.parse(body.get("departureTime")));
+                    departureRepository.save(dep);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/users")
