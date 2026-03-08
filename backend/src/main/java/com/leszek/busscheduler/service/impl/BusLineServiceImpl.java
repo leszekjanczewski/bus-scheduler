@@ -4,7 +4,6 @@ import com.leszek.busscheduler.domain.BusLine;
 import com.leszek.busscheduler.repository.BusLineRepository;
 import com.leszek.busscheduler.service.BusLineService;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +17,12 @@ public class BusLineServiceImpl implements BusLineService {
     @Override
     @Transactional(readOnly = true)
     public List<BusLine> findAllWithRoutes() {
-        List<BusLine> lines = busLineRepository.findAllWithRoutes();
-        // OSIV is disabled — eagerly initialize lazy collections within the transaction.
-        // @BatchSize on routeStops (20) and trips (10) ensures this is done in batches, not N+1.
-        lines.forEach(line -> line.getRoutes().forEach(route -> {
-            Hibernate.initialize(route.getRouteStops());
-            Hibernate.initialize(route.getTrips());
-        }));
+        // Two separate queries avoid MultipleBagFetchException (same pattern as findByIdWithFullDetails).
+        // Hibernate's first-level cache merges both result sets into fully-loaded entities.
+        List<BusLine> lines = busLineRepository.findAllWithRoutesAndStops();
+        if (!lines.isEmpty()) {
+            busLineRepository.findAllWithRoutesAndTrips();
+        }
         return lines;
     }
 
