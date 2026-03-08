@@ -36,6 +36,7 @@ const AdminPanel: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [newTripCalendar, setNewTripCalendar] = useState<{ [rIdx: number]: string }>({});
   const [newTripTime, setNewTripTime] = useState<{ [rIdx: number]: string }>({});
+  const [editLoading, setEditLoading] = useState(false);
 
   const isAdmin = userRoles.includes('ROLE_ADMIN');
 
@@ -170,6 +171,17 @@ const AdminPanel: React.FC = () => {
     newRoutes[rIdx] = { ...route, trips };
     setEditingLine({ ...editingLine!, routes: newRoutes });
   };
+
+  if (editLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white/70 dark:bg-slate-950/70 backdrop-blur-sm z-50">
+        <div className="flex flex-col items-center gap-4">
+          <span className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-black uppercase tracking-widest text-slate-500">Pobieranie danych...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (editingLine) {
     return (
@@ -387,7 +399,16 @@ const AdminPanel: React.FC = () => {
                   <td className="px-10 py-8 font-black text-slate-700 dark:text-slate-200 text-left">{line.operator}</td>
                   <td className="px-10 py-8 text-right text-left">
                     <div className="flex justify-end gap-3 text-left">
-                      <button onClick={() => setEditingLine(line)} className="p-4 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all text-left"><Edit3 size={20} /></button>
+                      <button onClick={async () => {
+                        setEditLoading(true);
+                        try {
+                          const res = await apiClient.get(`${ADMIN_API}/lines/${line.id}/full`);
+                          setEditingLine(res.data);
+                        } catch { setError('Błąd pobierania danych linii.'); }
+                        finally { setEditLoading(false); }
+                      }} className="p-4 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all text-left">
+                        {editLoading ? <span className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin inline-block" /> : <Edit3 size={20} />}
+                      </button>
                       {isAdmin && <button onClick={() => handleDeleteLine(line.id)} className="p-4 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all text-left"><Trash2 size={20} /></button>}
                     </div>
                   </td>

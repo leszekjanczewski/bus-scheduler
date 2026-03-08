@@ -40,6 +40,13 @@ public class AdminController {
         return busLineService.findAllWithRoutes();
     }
 
+    @GetMapping("/lines/{id}/full")
+    public ResponseEntity<BusLine> getLineFull(@PathVariable Long id) {
+        return busLineService.findByIdWithFullDetails(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/lines/{id}")
     public ResponseEntity<BusLine> updateLine(@PathVariable Long id, @RequestBody BusLine updatedLine) {
         return busLineService.findById(id)
