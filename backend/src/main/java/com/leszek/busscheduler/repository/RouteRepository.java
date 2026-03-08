@@ -70,10 +70,13 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
     List<DirectRouteInfo> findDirectRoutesByName(@Param("fromStopName") String fromStopName,
                                                  @Param("toStopName") String toStopName);
     @Query("""
-            select distinct r.direction 
-            from Route r 
-            join RouteStop rs on rs.route = r 
+            select distinct r.direction
+            from Route r
+            join RouteStop rs on rs.route = r
             where rs.busStop.id = :busStopId
             """)
     List<String> findDirectionsByBusStopId(@Param("busStopId") Long busStopId);
+
+    @Query("SELECT r FROM Route r LEFT JOIN FETCH r.routeStops rs LEFT JOIN FETCH rs.busStop WHERE r.id = :id")
+    Optional<Route> findByIdWithStops(@Param("id") Long id);
 }
