@@ -34,7 +34,7 @@ public class Route {
     private Set<RouteStop> routeStops;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 10)
     private Set<Trip> trips;
 }
