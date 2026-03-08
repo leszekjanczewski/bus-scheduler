@@ -11,4 +11,6 @@ public interface BusLineService {
     boolean deleteById(Long id);
 
     List<BusLine> findAllWithRoutes();
+
+    Optional<BusLine> findByIdWithFullDetails(Long id);
 }

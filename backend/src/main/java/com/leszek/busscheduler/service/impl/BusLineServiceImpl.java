@@ -18,6 +18,18 @@ public class BusLineServiceImpl implements BusLineService {
     @Transactional(readOnly = true)
     public List<BusLine> findAllWithRoutes() { return busLineRepository.findAllWithRoutes(); }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<BusLine> findByIdWithFullDetails(Long id) {
+        // Two separate queries avoid the Cartesian product from multi-bag JOIN FETCH.
+        // Hibernate's first-level cache merges both result sets into one fully-loaded entity.
+        Optional<BusLine> result = busLineRepository.findByIdWithRoutesAndStops(id);
+        if (result.isPresent()) {
+            busLineRepository.findByIdWithRoutesAndTrips(id);
+        }
+        return result;
+    }
+
     private final BusLineRepository busLineRepository;
 
     @Override

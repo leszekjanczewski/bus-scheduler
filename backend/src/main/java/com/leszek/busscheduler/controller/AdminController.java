@@ -40,6 +40,13 @@ public class AdminController {
         return busLineService.findAllWithRoutes();
     }
 
+    @GetMapping("/lines/{id}/full")
+    public ResponseEntity<BusLine> getLineFull(@PathVariable Long id) {
+        return busLineService.findByIdWithFullDetails(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/lines/{id}")
     public ResponseEntity<BusLine> updateLine(@PathVariable Long id, @RequestBody BusLine updatedLine) {
         return busLineService.findById(id)
@@ -74,6 +81,53 @@ public class AdminController {
                                                 busStopRepository.findById(updatedStopData.getBusStop().getId())
                                                     .ifPresent(existingStop::setBusStop);
                                             }
+                                        }
+                                    }
+                                }
+
+                                // Trip sync
+                                if (updatedRouteData.getTrips() != null) {
+                                    if (existingRoute.getTrips() == null) {
+                                        existingRoute.setTrips(new HashSet<>());
+                                    }
+                                    Set<Trip> existingTrips = existingRoute.getTrips();
+
+                                    Map<Long, Trip> existingTripsById = existingTrips.stream()
+                                            .filter(t -> t.getId() != null)
+                                            .collect(Collectors.toMap(Trip::getId, t -> t));
+
+                                    Set<Long> incomingTripIds = updatedRouteData.getTrips().stream()
+                                            .filter(t -> t.getId() != null)
+                                            .map(Trip::getId)
+                                            .collect(Collectors.toSet());
+
+                                    existingTrips.removeIf(t -> t.getId() != null && !incomingTripIds.contains(t.getId()));
+
+                                    for (Trip incomingTrip : updatedRouteData.getTrips()) {
+                                        if (incomingTrip.getId() != null && existingTripsById.containsKey(incomingTrip.getId())) {
+                                            existingTripsById.get(incomingTrip.getId()).setCalendarType(incomingTrip.getCalendarType());
+                                        } else if (incomingTrip.getId() == null) {
+                                            Trip newTrip = new Trip();
+                                            newTrip.setCalendarType(incomingTrip.getCalendarType());
+                                            newTrip.setRoute(existingRoute);
+
+                                            if (incomingTrip.getDepartures() != null) {
+                                                Set<Departure> newDepartures = new HashSet<>();
+                                                for (Departure incomingDep : incomingTrip.getDepartures()) {
+                                                    if (incomingDep.getBusStop() != null && incomingDep.getBusStop().getId() != null) {
+                                                        Optional<BusStop> busStopOpt = busStopRepository.findById(incomingDep.getBusStop().getId());
+                                                        if (busStopOpt.isPresent()) {
+                                                            Departure newDep = new Departure();
+                                                            newDep.setDepartureTime(incomingDep.getDepartureTime());
+                                                            newDep.setBusStop(busStopOpt.get());
+                                                            newDep.setTrip(newTrip);
+                                                            newDepartures.add(newDep);
+                                                        }
+                                                    }
+                                                }
+                                                newTrip.setDepartures(newDepartures);
+                                            }
+                                            existingTrips.add(newTrip);
                                         }
                                     }
                                 }

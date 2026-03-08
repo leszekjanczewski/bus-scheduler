@@ -10,8 +10,8 @@ import { API_BASE_URL } from '../config';
 
 interface BusStop { id: number; name: string; city: string; direction?: string; }
 interface RouteStop { id: number; busStop: BusStop; sequenceNumber: number; timeOffsetMinutes: number; }
-interface Departure { id: number; departureTime: string; busStop: { name: string }; }
-interface Trip { id: number; calendarType: string; departures: Departure[]; }
+interface Departure { id: number | null; departureTime: string; busStop: BusStop; }
+interface Trip { id: number | null; calendarType: string; departures: Departure[]; }
 interface Route { id: number; variantName: string; direction: string; trips: Trip[]; routeStops: RouteStop[]; }
 interface BusLine { id: number; lineNumber: string; operator: string; routes: Route[]; }
 interface User { id: string; username: string; email: string; roles: string[]; }
@@ -35,6 +35,9 @@ const AdminPanel: React.FC = () => {
   const [newUserPass, setNewUserPass] = useState('');
   const [newUserRole, setNewUserRole] = useState<'ROLE_USER' | 'ROLE_ADMIN'>('ROLE_USER');
   const [newPassword, setNewPassword] = useState('');
+  const [newTripCalendar, setNewTripCalendar] = useState<{ [rIdx: number]: string }>({});
+  const [newTripTime, setNewTripTime] = useState<{ [rIdx: number]: string }>({});
+  const [editLoading, setEditLoading] = useState(false);
 
   const isAdmin = userRoles.includes('ROLE_ADMIN');
 
@@ -128,6 +131,58 @@ const AdminPanel: React.FC = () => {
     });
     return groups;
   };
+
+  const calculateDepartureTime = (startTime: string, offsetMinutes: number): string => {
+    const [h, m] = startTime.split(':').map(Number);
+    const total = h * 60 + m + offsetMinutes;
+    const rh = Math.floor(total / 60) % 24;
+    const rm = total % 60;
+    return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}:00`;
+  };
+
+  const getTripStartTime = (trip: Trip): string => {
+    if (!trip.departures || trip.departures.length === 0) return '--:--';
+    const sorted = [...trip.departures].sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+    return sorted[0].departureTime.substring(0, 5);
+  };
+
+  const handleAddTrip = (rIdx: number, route: Route) => {
+    const startTime = newTripTime[rIdx];
+    const calType = newTripCalendar[rIdx] || 'Dni robocze';
+    if (!startTime) { alert('Podaj godzinę startu kursu'); return; }
+    const sortedStops = [...Array.from(route.routeStops)].sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+    const newTrip: Trip = {
+      id: null,
+      calendarType: calType,
+      departures: sortedStops.map(rs => ({
+        id: null,
+        departureTime: calculateDepartureTime(startTime, rs.timeOffsetMinutes),
+        busStop: { id: rs.busStop.id, name: rs.busStop.name, city: rs.busStop.city }
+      }))
+    };
+    const newRoutes = [...Array.from(editingLine!.routes)];
+    newRoutes[rIdx] = { ...route, trips: [...Array.from(route.trips || []), newTrip] };
+    setEditingLine({ ...editingLine!, routes: newRoutes });
+  };
+
+  const handleDeleteTrip = (rIdx: number, route: Route, tripIdx: number) => {
+    const newRoutes = [...Array.from(editingLine!.routes)];
+    const trips = [...Array.from(route.trips || [])];
+    trips.splice(tripIdx, 1);
+    newRoutes[rIdx] = { ...route, trips };
+    setEditingLine({ ...editingLine!, routes: newRoutes });
+  };
+
+  if (editLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white/70 dark:bg-slate-950/70 backdrop-blur-sm z-50">
+        <div className="flex flex-col items-center gap-4">
+          <span className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-black uppercase tracking-widest text-slate-500">Pobieranie danych...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (editingLine) {
     return (
@@ -243,6 +298,58 @@ const AdminPanel: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              <div className="p-10 border-t border-slate-100 dark:border-slate-700/50 text-left">
+                <div className="flex items-center gap-3 mb-6 text-left">
+                  <Clock size={20} className="text-purple-500" />
+                  <h4 className="text-lg font-black dark:text-white uppercase tracking-tight">Zarządzanie Kursami</h4>
+                </div>
+
+                <div className="space-y-3 mb-6 text-left">
+                  {Array.from(route.trips || []).map((trip, tripIdx) => (
+                    <div key={trip.id ?? `new-${tripIdx}`} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 text-left">
+                      <div className="flex items-center gap-4 text-left">
+                        <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-[10px] font-black uppercase">{trip.calendarType}</span>
+                        <span className="font-mono font-bold text-slate-700 dark:text-slate-200 text-sm">{getTripStartTime(trip)}</span>
+                        <span className="text-[10px] text-slate-400 font-bold">{trip.departures?.length || 0} odjazdów</span>
+                      </div>
+                      <button onClick={() => handleDeleteTrip(rIdx, route, tripIdx)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-end gap-4 p-6 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30 text-left">
+                  <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Typ dnia</label>
+                    <select
+                      value={newTripCalendar[rIdx] || 'Dni robocze'}
+                      onChange={e => setNewTripCalendar({ ...newTripCalendar, [rIdx]: e.target.value })}
+                      className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="Dni robocze">Dni robocze</option>
+                      <option value="Soboty">Soboty</option>
+                      <option value="Niedziele i święta">Niedziele i święta</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Godzina startu</label>
+                    <input
+                      type="time"
+                      value={newTripTime[rIdx] || ''}
+                      onChange={e => setNewTripTime({ ...newTripTime, [rIdx]: e.target.value })}
+                      className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleAddTrip(rIdx, route)}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-purple-700 transition-all shadow-lg shadow-purple-500/20"
+                  >
+                    <Plus size={14} /> Dodaj Kurs
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -293,7 +400,16 @@ const AdminPanel: React.FC = () => {
                   <td className="px-10 py-8 font-black text-slate-700 dark:text-slate-200 text-left">{line.operator}</td>
                   <td className="px-10 py-8 text-right text-left">
                     <div className="flex justify-end gap-3 text-left">
-                      <button onClick={() => setEditingLine(line)} className="p-4 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all text-left"><Edit3 size={20} /></button>
+                      <button onClick={async () => {
+                        setEditLoading(true);
+                        try {
+                          const res = await apiClient.get(`${ADMIN_API}/lines/${line.id}/full`);
+                          setEditingLine(res.data);
+                        } catch { setError('Błąd pobierania danych linii.'); }
+                        finally { setEditLoading(false); }
+                      }} className="p-4 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all text-left">
+                        {editLoading ? <span className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin inline-block" /> : <Edit3 size={20} />}
+                      </button>
                       {isAdmin && <button onClick={() => handleDeleteLine(line.id)} className="p-4 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all text-left"><Trash2 size={20} /></button>}
                     </div>
                   </td>
