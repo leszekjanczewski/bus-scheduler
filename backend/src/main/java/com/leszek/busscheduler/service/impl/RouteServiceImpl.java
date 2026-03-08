@@ -16,7 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -91,7 +93,9 @@ public class RouteServiceImpl implements RouteService {
 
         // 2. Pobierz pary odjazdów
         // Używamy zoptymalizowanego zapytania w TripRepository
-        List<Object[]> rawConnections = tripRepository.findConnections(fromStop.getId(), toStop.getId(), request.time());
+        LocalDate date = request.date() != null ? request.date() : LocalDate.now();
+        String calendarType = determineDayType(date);
+        List<Object[]> rawConnections = tripRepository.findConnections(fromStop.getId(), toStop.getId(), request.time(), calendarType);
 
                 // 3. Mapuj na DTO
         return rawConnections.stream()
@@ -108,5 +112,12 @@ public class RouteServiceImpl implements RouteService {
                 );
             })
             .toList();
+    }
+
+    private String determineDayType(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY) return "Soboty";
+        if (day == DayOfWeek.SUNDAY)   return "Niedziele i święta";
+        return "Dni robocze";
     }
 }

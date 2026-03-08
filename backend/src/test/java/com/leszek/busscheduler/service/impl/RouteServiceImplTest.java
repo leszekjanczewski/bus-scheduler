@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
@@ -41,13 +42,12 @@ class RouteServiceImplTest {
     @DisplayName("Should find connections between two stops after a given time")
     void shouldFindConnections() {
         // given
-        String fromStopName = "Stop A";
-        String toStopName = "Stop B";
         LocalTime startTime = LocalTime.of(10, 0);
-        SearchRequest request = new SearchRequest(fromStopName, toStopName, startTime);
+        LocalDate monday = LocalDate.of(2026, 3, 9); // poniedziałek → "Dni robocze"
+        SearchRequest request = new SearchRequest(1L, 2L, startTime, monday);
 
-        BusStop stopA = BusStop.builder().id(1L).name(fromStopName).build();
-        BusStop stopB = BusStop.builder().id(2L).name(toStopName).build();
+        BusStop stopA = BusStop.builder().id(1L).name("Stop A").build();
+        BusStop stopB = BusStop.builder().id(2L).name("Stop B").build();
 
         BusLine line = BusLine.builder().lineNumber("241").build();
         Route route = Route.builder().busLine(line).build();
@@ -68,9 +68,9 @@ class RouteServiceImplTest {
         Object[] connectionRow = new Object[]{depA, depB};
         List<Object[]> mockResponse = Collections.singletonList(connectionRow);
 
-        when(busStopRepository.findByName(fromStopName)).thenReturn(Optional.of(stopA));
-        when(busStopRepository.findByName(toStopName)).thenReturn(Optional.of(stopB));
-        when(tripRepository.findConnections(1L, 2L, startTime)).thenReturn(mockResponse);
+        when(busStopRepository.findById(1L)).thenReturn(Optional.of(stopA));
+        when(busStopRepository.findById(2L)).thenReturn(Optional.of(stopB));
+        when(tripRepository.findConnections(1L, 2L, startTime, "Dni robocze")).thenReturn(mockResponse);
 
         // when
         List<ConnectionDTO> results = routeService.findConnections(request);
