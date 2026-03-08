@@ -37,7 +37,7 @@ function App() {
     loadStops();
   }, []);
 
-  const handleSearch = async (fromId: number, toId: number | null, time: string) => {
+  const handleSearch = async (fromId: number, toId: number | null, time: string, date: string) => {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
@@ -47,7 +47,7 @@ function App() {
     try {
       if (toId) {
         const response = await apiClient.get(`${API_BASE_URL}/search`, {
-          params: { fromId, toId, time }
+          params: { fromId, toId, time, date }
         });
         setConnections(response.data);
       } else {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Clock, Search, Navigation, Loader2, Info, X, Home, RotateCcw, ArrowRightLeft, Check } from 'lucide-react';
+import { MapPin, Clock, Calendar, Search, Navigation, Loader2, Info, X, Home, RotateCcw, ArrowRightLeft, Check } from 'lucide-react';
 import axios from 'axios';
 
 interface BusStop {
@@ -14,7 +14,7 @@ interface BusStop {
 }
 
 interface SearchFormProps {
-    onSearch: (fromId: number, toId: number | null, time: string) => void;
+    onSearch: (fromId: number, toId: number | null, time: string, date: string) => void;
     availableStops: BusStop[];
 }
 
@@ -27,6 +27,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
         const now = new Date();
         return now.toTimeString().slice(0, 5);
     });
+    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     // Ref-flag: set to true when user hits cancel, checked in async GPS callbacks
     const cancelledRef = useRef(false);
@@ -224,7 +225,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
             alert("Proszę wybrać przynajmniej przystanek początkowy z listy podpowiedzi.");
             return;
         }
-        onSearch(fromId, toId, time);
+        onSearch(fromId, toId, time, date);
     };
 
     const getSelectedDirection = (id: number | null) => {
@@ -398,6 +399,14 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
                                 )) : <div className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Nie znaleziono</div>}
                             </div>
                         )}
+                    </div>
+
+                    <div className="flex-1 lg:max-w-[180px] relative group text-left">
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 z-10"><Calendar size={24} strokeWidth={2.5} /></div>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-[1.8rem] pl-16 pr-6 py-5">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 text-left">Data</label>
+                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="block w-full bg-transparent border-none p-0 text-slate-900 dark:text-white font-black focus:ring-0 text-base sm:text-lg cursor-pointer" required />
+                        </div>
                     </div>
 
                     <div className="flex-1 lg:max-w-[180px] relative group text-left">
