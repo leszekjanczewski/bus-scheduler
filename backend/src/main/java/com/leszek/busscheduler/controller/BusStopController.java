@@ -112,8 +112,8 @@ public class BusStopController {
                     Long id = ((Number) row[0]).longValue();
                     String name = (String) row[1];
                     String city = (String) row[2];
-                    Double bLat = (Double) row[3];
-                    Double bLon = (Double) row[4];
+                    Double bLat = row[3] != null ? ((Number) row[3]).doubleValue() : null;
+                    Double bLon = row[4] != null ? ((Number) row[4]).doubleValue() : null;
                     String direction = (String) row[5];
                     String directionsStr = (String) row[6];
 
