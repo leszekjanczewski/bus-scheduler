@@ -102,34 +102,43 @@ public class BusStopController {
     public ResponseEntity<List<BusStopDTO>> getNearbyStops(
             @RequestParam Double lat,
             @RequestParam Double lon) {
-        // BoundingBox pre-filter (±0.02° ≈ ~2 km) eliminates full-table scan in Java
+        // BoundingBox pre-filter (±0.02° ≈ ~2 km)
         double delta = 0.02;
-        List<BusStopDTO> nearbyStops = busStopRepository
-                .findWithinBoundingBox(lat - delta, lat + delta, lon - delta, lon + delta)
-                .stream()
-                .map(stop -> BusStopDTO.builder()
-                        .id(stop.getId())
-                        .name(stop.getName())
-                        .city(stop.getCity())
-                        .latitude(stop.getLatitude())
-                        .longitude(stop.getLongitude())
-                        .distance(haversineKm(lat, lon, stop.getLatitude(), stop.getLongitude()))
-                        .build())
-                .sorted(Comparator.comparingDouble(BusStopDTO::getDistance))
-                .limit(4)
-                .map(dto -> {
-                    // Fetch directions only for the 4 final results (not for every candidate)
-                    List<String> directions = routeRepository.findDirectionsByBusStopId(dto.getId());
+        List<Object[]> rawResults = busStopRepository
+                .findWithinBoundingBoxWithDirectionsNative(lat - delta, lat + delta, lon - delta, lon + delta);
+
+        List<BusStopDTO> nearbyStops = rawResults.stream()
+                .map(row -> {
+                    Long id = ((Number) row[0]).longValue();
+                    String name = (String) row[1];
+                    String city = (String) row[2];
+                    Double bLat = (Double) row[3];
+                    Double bLon = (Double) row[4];
+                    String direction = (String) row[5];
+                    String directionsStr = (String) row[6];
+
+                    List<String> directions = directionsStr != null 
+                            ? List.of(directionsStr.split(";")) 
+                            : List.of();
+
+                    // If direction is not null/empty, we should prefer it as the only direction or add it
+                    if (direction != null && !direction.isBlank() && directions.isEmpty()) {
+                        directions = List.of(direction);
+                    }
+
                     return BusStopDTO.builder()
-                            .id(dto.getId())
-                            .name(dto.getName())
-                            .city(dto.getCity())
-                            .latitude(dto.getLatitude())
-                            .longitude(dto.getLongitude())
-                            .distance(dto.getDistance())
+                            .id(id)
+                            .name(name)
+                            .city(city)
+                            .latitude(bLat)
+                            .longitude(bLon)
+                            .direction(direction)
                             .directions(directions)
+                            .distance(haversineKm(lat, lon, bLat, bLon))
                             .build();
                 })
+                .sorted(Comparator.comparingDouble(BusStopDTO::getDistance))
+                .limit(4)
                 .toList();
         return ResponseEntity.ok(nearbyStops);
     }

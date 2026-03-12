@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "bus_stops")
+@Table(name = "bus_stops", indexes = {
+    @Index(name = "idx_bus_stop_lat_lon", columnList = "latitude, longitude")
+})
 @Getter
 @Setter
 @NoArgsConstructor

@@ -19,5 +19,30 @@ public interface BusStopRepository extends JpaRepository<BusStop, Long> {
            "AND b.longitude BETWEEN :minLon AND :maxLon")
     List<BusStop> findWithinBoundingBox(@Param("minLat") Double minLat, @Param("maxLat") Double maxLat,
                                         @Param("minLon") Double minLon, @Param("maxLon") Double maxLon);
+
+    interface BusStopWithDirections {
+        Long getId();
+        String getName();
+        String getCity();
+        Double getLatitude();
+        Double getLongitude();
+        String getDirection();
+        List<String> getDirections();
+    }
+
+    @Query(value = """
+            SELECT DISTINCT b.id as id, b.name as name, b.city as city, 
+                   b.latitude as latitude, b.longitude as longitude, 
+                   b.direction as direction,
+                   GROUP_CONCAT(DISTINCT r.direction SEPARATOR ';') as directions_str
+            FROM bus_stops b
+            LEFT JOIN route_stops rs ON rs.bus_stop_id = b.id
+            LEFT JOIN routes r ON r.id = rs.route_id
+            WHERE b.latitude BETWEEN :minLat AND :maxLat
+              AND b.longitude BETWEEN :minLon AND :maxLon
+            GROUP BY b.id
+            """, nativeQuery = true)
+    List<Object[]> findWithinBoundingBoxWithDirectionsNative(@Param("minLat") Double minLat, @Param("maxLat") Double maxLat,
+                                                              @Param("minLon") Double minLon, @Param("maxLon") Double maxLon);
 }
 
