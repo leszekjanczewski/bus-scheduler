@@ -64,13 +64,14 @@ class BusSearchServiceImplTest {
         @Override public String getLineNumber() { return lineNumber; }
         @Override public Integer getFromOffset() { return fromOffset; }
         @Override public Integer getToOffset() { return toOffset; }
+        @Override public String getDirection() { return "Test Direction"; }
     }
 
     @Test
     void search_happyPath_directConnectionMappedAndSorted() {
         // given
         LocalTime fromTime = LocalTime.of(8, 0);
-        SearchRequest request = new SearchRequest("A", "B", fromTime);
+        SearchRequest request = new SearchRequest(1L, 2L, fromTime, java.time.LocalDate.now());
 
         when(busStopRepository.findByName("A")).thenReturn(Optional.of(stopA));
         when(busStopRepository.findByName("B")).thenReturn(Optional.of(stopB));
@@ -112,7 +113,7 @@ class BusSearchServiceImplTest {
     void search_wrongDirection_filteredOut_returnsEmpty() {
         // given
         LocalTime fromTime = LocalTime.of(8, 0);
-        SearchRequest request = new SearchRequest("A", "B", fromTime);
+        SearchRequest request = new SearchRequest(1L, 2L, fromTime, java.time.LocalDate.now());
 
         when(busStopRepository.findByName("A")).thenReturn(Optional.of(stopA));
         when(busStopRepository.findByName("B")).thenReturn(Optional.of(stopB));
@@ -134,7 +135,7 @@ class BusSearchServiceImplTest {
     void search_noRoute_returnsEmptyList() {
         // given
         LocalTime fromTime = LocalTime.of(8, 0);
-        SearchRequest request = new SearchRequest("A", "B", fromTime);
+        SearchRequest request = new SearchRequest(1L, 2L, fromTime, java.time.LocalDate.now());
 
         when(busStopRepository.findByName("A")).thenReturn(Optional.of(stopA));
         when(busStopRepository.findByName("B")).thenReturn(Optional.of(stopB));
@@ -152,27 +153,27 @@ class BusSearchServiceImplTest {
     @Test
     void search_stopNotFound_fromStopMissing_throws() {
         // given
-        SearchRequest request = new SearchRequest("Missing", "B", LocalTime.of(8, 0));
-        when(busStopRepository.findByName("Missing")).thenReturn(Optional.empty());
+        SearchRequest request = new SearchRequest(999L, 2L, LocalTime.of(8, 0), java.time.LocalDate.now());
+        when(busStopRepository.findById(999L)).thenReturn(Optional.empty());
 
         // when / then
         assertThrows(StopNotFoundException.class, () -> service.search(request));
-        verify(busStopRepository).findByName("Missing");
-        verify(busStopRepository, never()).findByName("B");
+        verify(busStopRepository).findById(999L);
+        verify(busStopRepository, never()).findById(2L);
         verifyNoInteractions(routeRepository, departureRepository);
     }
 
     @Test
     void search_stopNotFound_toStopMissing_throws() {
         // given
-        SearchRequest request = new SearchRequest("A", "Missing", LocalTime.of(8, 0));
-        when(busStopRepository.findByName("A")).thenReturn(Optional.of(stopA));
-        when(busStopRepository.findByName("Missing")).thenReturn(Optional.empty());
+        SearchRequest request = new SearchRequest(1L, 999L, LocalTime.of(8, 0), java.time.LocalDate.now());
+        when(busStopRepository.findById(1L)).thenReturn(Optional.of(stopA));
+        when(busStopRepository.findById(999L)).thenReturn(Optional.empty());
 
         // when / then
         assertThrows(StopNotFoundException.class, () -> service.search(request));
-        verify(busStopRepository).findByName("A");
-        verify(busStopRepository).findByName("Missing");
+        verify(busStopRepository).findById(1L);
+        verify(busStopRepository).findById(999L);
         verifyNoInteractions(routeRepository, departureRepository);
     }
 }

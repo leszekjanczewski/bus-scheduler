@@ -17,13 +17,9 @@ public class BusLineServiceImpl implements BusLineService {
     @Override
     @Transactional(readOnly = true)
     public List<BusLine> findAllWithRoutes() {
-        // Two separate queries avoid MultipleBagFetchException (same pattern as findByIdWithFullDetails).
-        // Hibernate's first-level cache merges both result sets into fully-loaded entities.
-        List<BusLine> lines = busLineRepository.findAllWithRoutesAndStops();
-        if (!lines.isEmpty()) {
-            busLineRepository.findAllWithRoutesAndTrips();
-        }
-        return lines;
+        // List view needs only routes + routeStops — trips are loaded on demand per route
+        // via GET /admin/routes/{id}/trips (lazy loading pattern).
+        return busLineRepository.findAllWithRoutesAndStops();
     }
 
     @Override

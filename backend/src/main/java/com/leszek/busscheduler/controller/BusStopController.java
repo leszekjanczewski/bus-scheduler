@@ -102,18 +102,39 @@ public class BusStopController {
     public ResponseEntity<List<BusStopDTO>> getNearbyStops(
             @RequestParam Double lat,
             @RequestParam Double lon) {
-        List<BusStopDTO> nearbyStops = busStopRepository.findAll().stream()
-                .map(stop -> {
-                    double dist = calculateDistance(lat, lon, stop.getLatitude(), stop.getLongitude());
-                                        List<String> directions = routeRepository.findDirectionsByBusStopId(stop.getId());
+        // BoundingBox pre-filter (±0.02° ≈ ~2 km)
+        double delta = 0.02;
+        List<Object[]> rawResults = busStopRepository
+                .findWithinBoundingBoxWithDirectionsNative(lat - delta, lat + delta, lon - delta, lon + delta);
+
+        List<BusStopDTO> nearbyStops = rawResults.stream()
+                .map(row -> {
+                    Long id = ((Number) row[0]).longValue();
+                    String name = (String) row[1];
+                    String city = (String) row[2];
+                    Double bLat = (Double) row[3];
+                    Double bLon = (Double) row[4];
+                    String direction = (String) row[5];
+                    String directionsStr = (String) row[6];
+
+                    List<String> directions = directionsStr != null 
+                            ? List.of(directionsStr.split(";")) 
+                            : List.of();
+
+                    // If direction is not null/empty, we should prefer it as the only direction or add it
+                    if (direction != null && !direction.isBlank() && directions.isEmpty()) {
+                        directions = List.of(direction);
+                    }
+
                     return BusStopDTO.builder()
-                            .id(stop.getId())
-                            .name(stop.getName())
-                            .city(stop.getCity())
-                            .latitude(stop.getLatitude())
-                            .longitude(stop.getLongitude())
-                            .distance(dist)
+                            .id(id)
+                            .name(name)
+                            .city(city)
+                            .latitude(bLat)
+                            .longitude(bLon)
+                            .direction(direction)
                             .directions(directions)
+                            .distance(haversineKm(lat, lon, bLat, bLon))
                             .build();
                 })
                 .sorted(Comparator.comparingDouble(BusStopDTO::getDistance))
@@ -122,10 +143,14 @@ public class BusStopController {
         return ResponseEntity.ok(nearbyStops);
     }
 
-    private double calculateDistance(Double lat1, Double lon1, Double lat2, Double lon2) {
-        if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return Double.MAX_VALUE;
-        double latDiff = lat1 - lat2;
-        double lonDiff = lon1 - lon2;
-        return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
+    /** Haversine formula — returns distance in km */
+    private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 }

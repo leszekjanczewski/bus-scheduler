@@ -39,6 +39,28 @@ class BusStopControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
+    @MockitoBean
+    private com.leszek.busscheduler.repository.RouteRepository routeRepository;
+
+    @Test
+    @DisplayName("GET /api/v1/busstops/nearby - Should return nearby bus stops")
+    void shouldReturnNearbyBusStops() throws Exception {
+        Object[] row = new Object[]{1L, "Stop 1", "City 1", 53.0, 14.0, "Direction 1", "Direction A;Direction B"};
+        List<Object[]> results = new java.util.ArrayList<>();
+        results.add(row);
+        when(busStopRepository.findWithinBoundingBoxWithDirectionsNative(any(), any(), any(), any()))
+                .thenReturn(results);
+
+        mockMvc.perform(get("/api/v1/busstops/nearby")
+                        .param("lat", "53.0")
+                        .param("lon", "14.0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Stop 1"))
+                .andExpect(jsonPath("$[0].directions.length()").value(2))
+                .andExpect(jsonPath("$[0].directions[0]").value("Direction A"));
+    }
+
     @Test
     @DisplayName("GET /api/v1/busstops - Should return list of bus stops")
     void shouldReturnAllBusStops() throws Exception {
