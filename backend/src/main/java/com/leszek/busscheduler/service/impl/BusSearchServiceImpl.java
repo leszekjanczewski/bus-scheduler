@@ -60,8 +60,8 @@ public class BusSearchServiceImpl implements BusSearchService {
 
     private String determineDayType(LocalDate date) {
         DayOfWeek day = date.getDayOfWeek();
-        if (day == DayOfWeek.SATURDAY) return "Soboty";
-        if (day == DayOfWeek.SUNDAY)   return "Niedziele i święta";
-        return "Dni robocze";
+        if (day == DayOfWeek.SATURDAY) return "SATURDAYS";
+        if (day == DayOfWeek.SUNDAY)   return "SUNDAYS_HOLIDAYS";
+        return "WORKDAYS";
     }
 }

@@ -214,6 +214,23 @@ public class AdminController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/departures")
+    public ResponseEntity<Departure> createDeparture(@RequestBody Map<String, String> body) {
+        Long tripId = Long.parseLong(body.get("tripId"));
+        Long busStopId = Long.parseLong(body.get("busStopId"));
+        LocalTime departureTime = LocalTime.parse(body.get("departureTime"));
+
+        return tripRepository.findById(tripId).flatMap(trip ->
+            busStopRepository.findById(busStopId).map(busStop -> {
+                Departure dep = new Departure();
+                dep.setTrip(trip);
+                dep.setBusStop(busStop);
+                dep.setDepartureTime(departureTime);
+                return ResponseEntity.ok(departureRepository.save(dep));
+            })
+        ).orElse(ResponseEntity.notFound().build());
+    }
+
     @PatchMapping("/departures/{id}")
     public ResponseEntity<Void> updateDepartureTime(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return departureRepository.findById(id)
