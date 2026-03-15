@@ -45,6 +45,12 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
 
     const fromRef = useRef<HTMLDivElement>(null);
     const toRef = useRef<HTMLDivElement>(null);
+    const dateInputRef = useRef<HTMLInputElement>(null);
+    const formatDateShort = (d: string) => {
+        if (!d) return '';
+        const [y, m, day] = d.split('-');
+        return `${day}.${m}.${y.slice(2)}`;
+    };
 
     // Close dropdowns on click outside
     useEffect(() => {
@@ -402,10 +408,13 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
                     </div>
 
                     <div className="flex-1 lg:max-w-[180px] relative group text-left">
-                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 z-10"><Calendar size={24} strokeWidth={2.5} /></div>
+                        <button type="button" onClick={() => dateInputRef.current?.showPicker()} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 z-10 cursor-pointer"><Calendar size={24} strokeWidth={2.5} /></button>
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-[1.8rem] pl-16 pr-6 py-5">
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 text-left">Data</label>
-                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="block w-full bg-transparent border-none p-0 text-slate-900 dark:text-white font-black focus:ring-0 text-base sm:text-lg cursor-pointer" required />
+                            <div className="relative">
+                                <span className="block text-slate-900 dark:text-white font-black text-base sm:text-lg pointer-events-none">{formatDateShort(date)}</span>
+                                <input ref={dateInputRef} type="date" value={date} onChange={(e) => setDate(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none" required />
+                            </div>
                         </div>
                     </div>
 
