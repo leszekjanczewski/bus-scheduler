@@ -3,6 +3,7 @@ package com.leszek.busscheduler.domain;
 import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import java.util.Set;
@@ -33,7 +34,7 @@ public class Route {
     @BatchSize(size = 20)
     private Set<RouteStop> routeStops;
 
-    @JsonManagedReference
+    @JsonIgnore
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 10)
     private Set<Trip> trips;
