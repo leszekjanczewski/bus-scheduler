@@ -141,8 +141,15 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
             }
             if (res.data && res.data.length > 0) {
                 const item = res.data[0];
-                const found = findAndSetNearestStop(parseFloat(item.lat), parseFloat(item.lon));
-                if (found) {
+                const lat = parseFloat(item.lat);
+                const lon = parseFloat(item.lon);
+                const apiBase = import.meta.env.VITE_API_URL || '';
+                const nearbyRes = await axios.get(`${apiBase}/api/v1/busstops/nearby?lat=${lat}&lon=${lon}`);
+                if (nearbyRes.data && nearbyRes.data.length > 0) {
+                    setNearbyAlternatives(nearbyRes.data);
+                    setAltIndex(0);
+                    setFrom(nearbyRes.data[0].name);
+                    setFromId(nearbyRes.data[0].id);
                     setDetectedAddress(formatAddress(item));
                     setShowAddressPrompt(false);
                     setManualAddress('');
