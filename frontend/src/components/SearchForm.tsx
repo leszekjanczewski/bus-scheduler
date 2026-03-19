@@ -326,11 +326,11 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
                                                 <p className="text-[10px] text-slate-400 font-bold uppercase">{stop.city}</p>
                                                 {stop.distance !== undefined && (
                                                     <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/50">
-                                                        {(stop.distance * 111000).toFixed(0)}m STĄD
+                                                        {stop.distance < 1 ? `${(stop.distance * 1000).toFixed(0)}m STĄD` : `${stop.distance.toFixed(1)}km STĄD`}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex flex-wrap gap-1 mt-1.5">    
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
                                                 {stop.directions && stop.directions.map(dir => (
                                                     <span key={dir} className="text-[8px] font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/50 uppercase flex items-center gap-1 shadow-sm">   
                                                         <span className="text-[10px]">→</span> {dir}
@@ -395,11 +395,11 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, availableStops }) => 
                                                 <p className="text-[10px] text-slate-400 font-bold uppercase">{stop.city}</p>
                                                 {stop.distance !== undefined && (
                                                     <span className="text-[9px] font-black text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-2 py-0.5 rounded-full border border-rose-100 dark:border-rose-900/50">
-                                                        {(stop.distance * 111000).toFixed(0)}m STĄD
+                                                        {stop.distance < 1 ? `${(stop.distance * 1000).toFixed(0)}m STĄD` : `${stop.distance.toFixed(1)}km STĄD`}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex flex-wrap gap-1 mt-1.5">      
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
                                                 {stop.directions && stop.directions.map(dir => (
                                                     <span key={dir} className="text-[8px] font-black bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-md border border-rose-100 dark:border-rose-900/50 uppercase flex items-center gap-1 shadow-sm">   
                                                         <span className="text-[10px]">→</span> {dir}
