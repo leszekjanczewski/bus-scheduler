@@ -21,11 +21,6 @@
     margin: 0;
   }
 
-  /* Basic fallback if tailwind fails to load */
-  html.dark body {
-    background-color: #020617;
-    color: #f8fafc;
-  }
 
   input[type="time"]::-webkit-calendar-picker-indicator {
     background: transparent;
@@ -39,6 +34,12 @@
     top: 0;
     width: auto;
   }
+}
+
+/* Dark mode body — outside @layer so it wins over layered styles */
+html.dark body {
+  background-color: #020617; /* slate-950 */
+  color: #f8fafc;            /* slate-50 */
 }
 
 /* Custom Utilities */
