@@ -35,3 +35,9 @@ Thumbs.db
 *.log
 .gemini/
 **/.claude/
+/backend/.env
+/backend/.junie/memory/errors.md
+/backend/.junie/memory/feedback.md
+/backend/.junie/memory/language.json
+/backend/.junie/memory/memory.version
+/backend/.junie/memory/tasks.md
